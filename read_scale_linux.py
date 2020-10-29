@@ -5,6 +5,7 @@ Created on Wed Oct 28 10:46:18 2020
 @author: Administrator2
 """
 
+import argparse
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 from matplotlib import style
@@ -35,6 +36,20 @@ for x in range(8): # skip first few lines
     print(line)
     time.sleep(0.1)
     
+# print("Waiting for RFID tag")
+# 
+# if __name__ == '__main__':
+#  
+#     parser = argparse.ArgumentParser()
+#     parser.add_argument('--port', help='Serial port to read tags from', required=True)
+#     args = parser.parse_args()
+#  
+#     serial_port = args.port
+#     with serial.Serial(serial_port, 9600) as rfid_reader:
+#         while(True):
+#             tag = rfid_reader.readline().decode('UTF-8').strip()
+#             print(tag)
+
 # This function is called periodically from FuncAnimation
 def animate(i, xs, ys):
 
@@ -70,8 +85,11 @@ def animate(i, xs, ys):
     plt.ylabel('Incoming weight data')
     plt.xlabel('Time(s)')
     #plt.axis([1, None, 0, 1.1]) #Use for arbitrary number of trials
-    #plt.axis([1, 100, 0, 1.1]) #Use for 100 trial demo
+    #                                                                                                                  plt.axis([1, 30, 0, 1.1]) #Use for 100 trial demo
 
 # Set up plot to call animate() function periodically
 ani = animation.FuncAnimation(fig, animate, fargs=(xs, ys), interval=1000)
-plt.show()
+plt.show(block=False)
+plt.pause(30)
+plt.savefig('/home/pi/Desktop/001.png')
+plt.close()
