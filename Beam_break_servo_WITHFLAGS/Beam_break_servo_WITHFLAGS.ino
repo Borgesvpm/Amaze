@@ -7,12 +7,12 @@ Servo servo1;     // Servo 1
  
 //Constants
 const int pResistor1 = A0; // Photoresistor at Arduino analog pin A0
-const int ledPin1 = 2;      // Led pin at Arduino pin 2
-const int servoPin1 = 3;      // control servo
-const int PiPin1 = 4;      // send report to Pi
-const int CLOSE_DOOR = 10;      // Angle of 10 degrees -> door is closed
-const int OPEN_DOOR = 135;     // Angle of 135 degrees -> door is opened
-const int PiInPin = 0;  
+const int ledPin1 = 0;      // Led pin at Arduino pin 2
+const int servoPin1 = 2;      // control servo
+const int Arduino_2_Pi = 13;      //Arduino_2_Pi
+const int CLOSE_DOOR = 135;      // Angle of 135 degrees -> door is closed
+const int OPEN_DOOR = 50;     // Angle of 50 degrees -> door is opened
+const int Pi_2_Arduino = 11;  //Pi_2_Arduino
 
 
 //Variables
@@ -27,8 +27,8 @@ void setup(){
   Serial.begin(9600);           //  setup serial
   pinMode(ledPin1, OUTPUT);  // Set ledPin - 2 pin as an output
   pinMode(pResistor1, INPUT);// Set pResistor - A0 pin as an input (optional)
-  pinMode(PiPin1, OUTPUT);  
-  pinMode(PiInPin, INPUT);// input commands from Pi
+  pinMode(Arduino_2_Pi, OUTPUT);  
+  pinMode(Pi_2_Arduino, INPUT);// input commands from Pi
   
   delay(50);
   INIT_READ1 = analogRead(pResistor1);
@@ -38,7 +38,7 @@ servo1.attach(servoPin1);
   //servos
   servo1.write(CLOSE_DOOR);
   delay(15);
-  digitalWrite(PiPin1, LOW);//communication to Pi
+  digitalWrite(Arduino_2_Pi, LOW);//communication to Pi
   digitalWrite(ledPin1, HIGH); //Turn led on
 
  START=LOW; //initialize start signal
@@ -51,11 +51,14 @@ servo1.attach(servoPin1);
 void loop(){
 
 //start waiting for flags from Pi
-START=digitalRead(PiInPin);
+START=digitalRead(Pi_2_Arduino);
+//Serial.println(digitalRead(Pi_2_Arduino));
+//Serial.println(START);
 
-
-if (START = HIGH){
-
+if (START==1){
+ 
+Serial.println("RFID TRIG");
+//Serial.println(START); 
  if (FLAG1<1){
 
       servo1.write(OPEN_DOOR);
@@ -63,13 +66,14 @@ if (START = HIGH){
 
   photo_value1 = analogRead(pResistor1);
   Serial.println(photo_value1);          // debug value
-  if (photo_value1 < INIT_READ1 - 50){    // values needs to be adjusted this based on ambient light
+  if (photo_value1 < INIT_READ1 - 250){    // values needs to be adjusted this based on ambient light
     // animal is passing by
     // TO DO - Send signal to pi
     digitalWrite(ledPin1, LOW);  //Turn led off
     servo1.write(CLOSE_DOOR);
     delay(15);
-    digitalWrite(PiPin1, HIGH);//pulse to Pi to start scale and move on.
+    digitalWrite(Arduino_2_Pi, HIGH);//pulse to Pi to start scale and move on.
+    delay(30000);
     FLAG1=1; FLAG2=0; FLAG3=1;
   }
  }
