@@ -35,8 +35,8 @@ const int CLOSE_DOOR3 = 159;      // Angle of 157 degrees -> middle passage is c
 const int OPEN_DOOR3 = 87;        // 89
 const int RELEASE_WHEEL = 100;      // Angle of 100 degrees -> WHEEL is free
 const int BRAKE_WHEEL = 20;  //20 CLAMPED
-const int SHOW_FOOD = 120;      // Angle of 120 degrees -> FOOD IN CENTER
-const int HIDE_FOOD = 175;  //175 HIDDEN
+const int SHOW_FOOD = 170;      // Angle of 120 degrees -> FOOD IN CENTER
+const int HIDE_FOOD = 123;  //175 HIDDEN
 
 const int pi_ard_1 = 12;      // receive RFID command from Pi 
 const int pi_ard_2 = 13;       // receive weight decision from Pi
@@ -108,12 +108,12 @@ delay(1000);
   servo4.write(RELEASE_WHEEL);
   delay(1000);
     servo5.attach(servoPin5);  //for loops for slow servo movement
-  for (pos5 = HIDE_FOOD; pos5 >= SHOW_FOOD; pos5 -= 1) { // show food
+  for (pos5 = HIDE_FOOD; pos5 <= SHOW_FOOD; pos5 += 1) { // show food
     servo5.write(pos5);              
     delay(30);                  
   }
   delay(1000);
-  for (pos5 = SHOW_FOOD; pos5 <= HIDE_FOOD; pos5 += 1) { // hide food
+  for (pos5 = SHOW_FOOD; pos5 >= HIDE_FOOD; pos5 -= 1) { // hide food
     servo5.write(pos5);
     delay(30);
   }
@@ -221,15 +221,15 @@ if (MODE==3){
 if (flag == 1){
   if (maze_mode==1){//non-blocking loop to move food to center without delays to code since animal could go elsewhere.
     if (time_flag==1){tic2=millis();time_flag=0;}
-    if (pos5 > SHOW_FOOD){
+    if (pos5 < SHOW_FOOD){
     duration2=millis()-tic2;
 if (duration2>30){
 servo5.write(pos5); 
-pos5=pos5-1;tic2=millis();
+pos5=pos5+1;tic2=millis();
     }}
     }
     if (pos5 == SHOW_FOOD){
-      maze_mode=2; pos5=SHOW_FOOD+1;time_flag2=1;
+      maze_mode=2; pos5=SHOW_FOOD-1;time_flag2=1;
     }
   if (maze_mode==2){
     duration=millis()-tic;
@@ -242,12 +242,12 @@ pos5=pos5-1;tic2=millis();
   servo4.write(BRAKE_WHEEL);
   //non-blocking for loop to move food away without delays to code since animal could be elsewhere.
        if (time_flag==1){tic2=millis();time_flag=0;}
-    if (pos5 < HIDE_FOOD){
+    if (pos5 > HIDE_FOOD){
     duration2=millis()-tic2;
 if (duration2>30){
 tic2=millis();
 servo5.write(pos5); 
-pos5=pos5+1;
+pos5=pos5-1;
     }}
   }}
   
@@ -256,12 +256,12 @@ pos5=pos5+1;
     if (time_flag3==1){tic=millis();time_flag3=0;}
   servo4.write(BRAKE_WHEEL);
   //non-blocking for loop to move food away without delays to code since animal could be elsewhere.
-    if (pos5 < HIDE_FOOD){
+    if (pos5 > HIDE_FOOD){
     duration=millis()-tic;
 if (duration>30){
 tic=millis();
 servo5.write(pos5); 
-pos5=pos5+1;
+pos5=pos5-1;
     }}
   }
   
