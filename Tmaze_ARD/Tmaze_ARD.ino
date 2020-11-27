@@ -13,8 +13,9 @@ Servo servo5;
 //Constants
 const int pResistor1 = A0; // Photoresistors A0-A3
 const int pResistor2 = A1; 
-const int pResistor3 = A2; 
+const int pResistor3 = A2; //choice running wheel
 const int pResistor4 = A3; 
+const int pResistor5 = A4; //choice food pod
 
 const int servoPin1 = 4;      // control servos 1-3
 const int servoPin2 = 5;
@@ -22,10 +23,11 @@ const int servoPin3 = 6;
 const int servoPin4 = 7;// control brake servo in running wheel
 const int servoPin5 = 3;// control food servo in hunting chamber
 
-const int ard_pi_1 = 8;      // send reports to Pi 
-const int ard_pi_2 = 9; 
-const int ard_pi_3 = 10;
-const int ard_pi_4 = 11;  
+const int ard_pi_1 = 8;      // reports MODE=2 to Pi 
+const int ard_pi_2 = 9;     // reports trial start to Pi
+const int ard_pi_3 = 10;  // reports MODE=1 to Pi
+const int ard_pi_4 = 11;  // reports food pod entry to Pi
+const int ard_pi_5 = 2;  // reports running wheel pod entry to Pi
 
 const int CLOSE_DOOR1 = 135;      // Angle of 135 degrees -> door is closed
 const int OPEN_DOOR1 = 20;     // Angle of 20 degrees -> door is opened
@@ -51,6 +53,8 @@ int photo_value3;          // Store value from photoresistor (0-1023)
 int INIT_READ3;
 int photo_value4;          // Store value from photoresistor (0-1023)
 int INIT_READ4;
+int photo_value5;          // Store value from photoresistor (0-1023)
+int INIT_READ5;
 int START=LOW; //initialize start signal
 int MODE=1;   //initialize MODE
 long interval = 3000; 
@@ -72,10 +76,12 @@ void setup(){
   pinMode(pResistor2, INPUT);
   pinMode(pResistor3, INPUT);
   pinMode(pResistor4, INPUT);
+  pinMode(pResistor5, INPUT);
   pinMode(ard_pi_1, OUTPUT);  //output reports to Pi
   pinMode(ard_pi_2, OUTPUT);  
   pinMode(ard_pi_3, OUTPUT); 
   pinMode(ard_pi_4, OUTPUT); 
+  pinMode(ard_pi_5, OUTPUT); 
   pinMode(pi_ard_1, INPUT);// input commands from Pi
   pinMode(pi_ard_2, INPUT);
     
@@ -122,13 +128,14 @@ delay(1000);
   digitalWrite(ard_pi_2, LOW);
   digitalWrite(ard_pi_3, LOW);
   digitalWrite(ard_pi_4, LOW);
-
+  digitalWrite(ard_pi_5, LOW);
 
   INIT_READ1 = analogRead(pResistor1);
   INIT_READ2 = analogRead(pResistor2);
   INIT_READ3 = analogRead(pResistor3);
   INIT_READ4 = analogRead(pResistor4);
-
+  INIT_READ5 = analogRead(pResistor5);
+  
    Serial.print("INIT_READ1 ");  
  Serial.println(INIT_READ1);  
    Serial.print("INIT_READ2 ");  
@@ -137,8 +144,10 @@ delay(1000);
  Serial.println(INIT_READ3);  
     Serial.print("INIT_READ4 ");  
  Serial.println(INIT_READ4);  
-
-  
+    Serial.print("INIT_READ5 ");  
+ Serial.println(INIT_READ5);  
+      Serial.print("MODE IS "); 
+Serial.println(MODE); 
 }
 
 void loop(){
@@ -146,28 +155,22 @@ photo_value1 = analogRead(pResistor1);
 photo_value2 = analogRead(pResistor2);
 photo_value3 = analogRead(pResistor3);
 photo_value4 = analogRead(pResistor4);
-Serial.print("MODE IS "); 
-Serial.println(MODE); 
- Serial.print("photo_value1 ");  
- Serial.println(photo_value1);  
- Serial.print("photo_value2 ");  
- Serial.println(photo_value2);  
-  Serial.print("photo_value3 ");  
- Serial.println(photo_value3);  
- Serial.print("photo_value4 ");  
- Serial.println(photo_value4);  
-
-
+photo_value5 = analogRead(pResistor5);
+// Serial.print("photo_value1 ");  
+// Serial.println(photo_value1);  
+// Serial.print("photo_value2 ");  
+// Serial.println(photo_value2);  
+//  Serial.print("photo_value3 ");  
+// Serial.println(photo_value3);  
+// Serial.print("photo_value4 ");  
+// Serial.println(photo_value4);  
+// Serial.print("photo_value5 ");  
+// Serial.println(photo_value5);  
 
 //MODE flag based state machine, that waits in MODEs 1 and 2 for a START signal from Pi
 //MODEs 3 and 4 are T-maze modes that do not need Pi, they only send info to Pi about when beam-breaks were triggered
 
-
 START=digitalRead(pi_ard_1);//RFID INPUT
-//   if (photo_value3 < 0.8*INIT_READ3){    // use reward beam as trig signal for setting up without Pi
-//    Serial.println("trig"); 
-//    START=HIGH; 
-//  }
 
 if (MODE==1){ //home cage
 if (START == 1){
@@ -177,9 +180,13 @@ if (START == 1){
   if (photo_value1 < 0.8*INIT_READ1){    // values needs to be adjusted based on ambient light
     Serial.println("animal in scale"); 
     servo1.write(CLOSE_DOOR1);
-    delay(1000);
-    digitalWrite(ard_pi_1, HIGH);//pulse to Pi to start scale and move on.
+    delay(100);
+    digitalWrite(ard_pi_1, HIGH);//pulse to Pi to start scale and go MODE 2.
+    delay(100);
+    digitalWrite(ard_pi_1, LOW);//end pulse to Pi.
     MODE=2;//end state can flag movement to other states
+    Serial.print("MODE IS "); 
+Serial.println(MODE); 
     START=LOW; 
   }}}
 
@@ -193,7 +200,11 @@ if (START == 1){
     Serial.println("enter maze"); 
 
     digitalWrite(ard_pi_2, HIGH);//pulse to Pi to say maze is active.
-    MODE=3;//end state can flag movement to other states
+        delay(100);
+    digitalWrite(ard_pi_2, LOW);//end pulse to Pi.
+    MODE=3;
+    Serial.print("MODE IS "); 
+Serial.println(MODE); 
     START=LOW; 
   }}
 
@@ -204,18 +215,32 @@ if (MODE==3){
   
   //maze start scenario
   photo_value3 = analogRead(pResistor3);
+  photo_value5 = analogRead(pResistor5);
   if (flag == 0){
-  if (photo_value3 < 0.9*INIT_READ3){   
+  if (photo_value3 < 0.7*INIT_READ3){   //in run wheel pod
     flag = 1; maze_mode=1;time_flag=1;tic=millis();
-    Serial.println("enter pod"); 
-    digitalWrite(ard_pi_2, HIGH);//pulse to Pi to say maze is active.
+    Serial.println("enter runwheel pod"); 
+    digitalWrite(ard_pi_5, HIGH);//pulse to Pi to say runwheel pod entry.
     for (pos = OPEN_DOOR3; pos <= CLOSE_DOOR3; pos += 1) { // close
     servo3.write(pos);     
     delay(8);              
   }
+
     servo4.write(RELEASE_WHEEL);
   delay(10);
-    digitalWrite(ard_pi_2, LOW);//end pulse to Pi.
+    digitalWrite(ard_pi_5, LOW);//end pulse to Pi.
+  }
+    if (photo_value5 < 0.7*INIT_READ5){   //in food pod
+    flag = 1; maze_mode=1;time_flag=1;tic=millis();
+    Serial.println("enter food pod"); 
+    digitalWrite(ard_pi_4, HIGH);//pulse to Pi to say foodpod entry.
+    for (pos = OPEN_DOOR3; pos <= CLOSE_DOOR3; pos += 1) { // close
+    servo3.write(pos);     
+    delay(8);              
+  }
+      servo4.write(RELEASE_WHEEL);
+  delay(10);
+    digitalWrite(ard_pi_4, LOW);//end pulse to Pi.
   }}
 
 if (flag == 1){
@@ -233,8 +258,8 @@ pos5=pos5+1;tic2=millis();
     }
   if (maze_mode==2){
     duration=millis()-tic;
-    Serial.print("duration is "); 
-    Serial.println(duration);
+//    Serial.print("duration is "); 
+//    Serial.println(duration);
   }
   if (duration>5000){
     maze_mode=3;
@@ -271,10 +296,10 @@ pos5=pos5-1;
   if (photo_value2 < 0.8*INIT_READ2){   
     flag=0;
     Serial.println("new trial available"); 
-    digitalWrite(ard_pi_2, HIGH);//pulse to Pi
+    digitalWrite(ard_pi_2, HIGH);//pulse to Pi new trial
     for (pos = CLOSE_DOOR3; pos >= OPEN_DOOR3; pos -= 1) { // open
     servo3.write(pos);           
-    delay(7);                    
+    delay(8);                    
   }
     digitalWrite(ard_pi_2, LOW);//end pulse to Pi
   }}
@@ -286,22 +311,21 @@ pos5=pos5-1;
       servo2.write(CLOSE_DOOR2);
       delay(100);
       MODE=4;
+          Serial.print("MODE IS "); 
+Serial.println(MODE); 
   }
   }
 
    if (MODE==4){ 
      //going back to cage
-//     photo_value1 = analogRead(pResistor1);
-//  if (photo_value1 < 0.8*INIT_READ1){    // values needs to be adjusted based on ambient light
      servo1.write(OPEN_DOOR1);
-//}
 if (photo_value4 < 0.95*INIT_READ4){    // values needs to be adjusted based on ambient light
      servo1.write(CLOSE_DOOR1);
      delay(100);
+     digitalWrite(ard_pi_3, HIGH);//pulse to Pi to sync to MODE 1.
+     delay(100);
+     digitalWrite(ard_pi_3, LOW);//end pulse to Pi.
         MODE=1;
-        digitalWrite(ard_pi_3, HIGH);//pulse to Pi
-        delay(100);
-        digitalWrite(ard_pi_3, LOW);
    }
    }
 }//void loop end
