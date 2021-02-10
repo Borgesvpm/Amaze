@@ -41,6 +41,20 @@ event_list = {
     "Date": []
 }
 
+def wrapUp():
+    print("finally")
+
+    df_w = pd.DataFrame(weight_list)
+    df_e = pd.DataFrame(event_list)
+    print(df_w, df_e)
+
+    if not os.path.isfile(animaltag + "_weight.csv"):
+        df_w.to_csv(animaltag + "_weight.csv", encoding="utf-8-sig", index=False)
+        df_e.to_csv(animaltag + "_events.csv", encoding="utf-8-sig", index=False)
+    else:
+        df_w.to_csv(animaltag + "_weight.csv", mode="a", header=False, encoding="utf-8-sig", index=False)
+        df_w.to_csv(animaltag + "_events.csv", mode="a", header=False, encoding="utf-8-sig", index=False)
+
 #initialize serial port for OpenScale
 ser = serial.Serial()
 ser.port = '/dev/ttyUSB0' #Arduino serial port
@@ -91,17 +105,12 @@ clkLastState=GPIO.input(clk)
 Pi_RFID = 16
 Pi_scale = 15
 Pi_capture_1=40
-PiArd_reset=18
 GPIO.setup(Pi_RFID,GPIO.OUT)
 GPIO.setup(Pi_scale,GPIO.OUT)
 GPIO.setup(Pi_capture_1,GPIO.OUT)
-GPIO.setup(PiArd_reset,GPIO.OUT)
 GPIO.output(Pi_RFID,False)
 GPIO.output(Pi_scale,False)
 GPIO.output(Pi_capture_1,False)
-GPIO.output(PiArd_reset,False)
-time.sleep(0.3)
-GPIO.output(PiArd_reset,True)
 
 #state variables
 beam_break_flag = 0
@@ -113,7 +122,7 @@ cycle=1200 #cycle on running wheel gives approx this many counts
 run_flag=0
 
 while True:
-    while True:
+    try:
         if MODE == 1:
             print("\nMODE 1\n")
             serRFID.open()
@@ -136,7 +145,7 @@ while True:
                 time_var = time.strftime("%H%M%S")
 
                 #Append data
-                append_event("+", "START OF SESSION")
+                append_event("", "START OF SESSION")
                 
                 # switch mode and clean up RFID
                 MODE = 2
@@ -183,20 +192,25 @@ while True:
                         
         if MODE == 3 and GPIO.input(ard_pi_2) and flag==1: #log a trial start
             print("\ntrial start\n")
-            
-            if run_flag==1:
-                print("appending running wheel data")
-                cycles_str = str(counter/cycle)
-                append_event(cycles_str, "Running Wheel")
-            
+            #make a note
+            t2 = time.strftime("%Y%m%d-%H%M%S")      
+            file1 = open(completeName, "a")# append data
+            L = "\ntrial start\t" + t2 + "\n"
+            file1.writelines(L)
+            file1.close()
             #start camera capture/opto
             GPIO.output(Pi_capture_1,True)
             flag=0
             run_flag=0
+            file1 = open(completeName, "a")# append running data
+            cycles_str = str(counter/cycle)
+            L = "\nrun cycles\t" + cycles_str + "\n"
+            file1.writelines(L)
+            file1.close()
             counter=0
             print(L)
 
-
+            #Append data?
             
             
         if MODE == 3 and GPIO.input(ard_pi_3): #animal going back home
@@ -214,20 +228,34 @@ while True:
             MODE = 1
 
             #appending data to database
-            append_event("-", "END OF SESSION")
+            append_event("", "END OF SESSION")
             
             #BREAK OUT OF THE INFINITE LOOP SO THAT THE DATA CAN BE EXPORTED
             break
                     
         if MODE == 3 and GPIO.input(ard_pi_4) and flag==0: #log a maze event food
             print("\nfood pod\n")
+            #make a note
+            t4 = time.strftime("%Y%m%d-%H%M%S")      
+            file1 = open(completeName, "a")# append data
+            L = "\nfood pod\t" + t4 + "\n"
+            file1.writelines(L)
+            file1.close()
             flag=1
+
             #appending data to database
-            append_event("0", "Food pod")
+            append_event(cycles_str, "Food pod")
 
         if MODE == 3 and GPIO.input(ard_pi_5) and flag==0: #log a maze event running wheel
             print("\nrunning wheel\n")
-            
+            #appending data to database
+            append_event(cycles_str, "Running Wheel")
+            #make a note
+            t5 = time.strftime("%Y%m%d-%H%M%S")      
+            file1 = open(completeName, "a")# append data
+            L = "\nrunning wheel\t" + t5 + "\n"
+            file1.writelines(L)
+            file1.close()
             flag=1
             run_flag=1
             limit=cycle
@@ -237,18 +265,9 @@ while True:
                 counter += 1  
                 clkLastState = clkState
             if counter >= limit:
-                print(counter)    
-                limit=counter+cycle
-
-    print("finally")
-
-    df_w = pd.DataFrame(weight_list)
-    df_e = pd.DataFrame(event_list)
-    print(df_w, df_e)
-
-    if not os.path.isfile(animaltag + "_weight.csv"):
-        df_w.to_csv(animaltag + "_weight.csv", encoding="utf-8-sig", index=False)
-        df_e.to_csv(animaltag + "_events.csv", encoding="utf-8-sig", index=False)
-    else:
-        df_w.to_csv(animaltag + "_weight.csv", mode="a+", header=False, encoding="utf-8-sig", index=False)
-        df_e.to_csv(animaltag + "_events.csv", mode="a+", header=False, encoding="utf-8-sig", index=False)
+                print(counter)
+        
+        wrapUp()
+        
+    except KeyboardInterrupt:
+        wrapUp()
