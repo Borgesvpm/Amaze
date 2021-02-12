@@ -5,28 +5,46 @@ Created on Wed Oct 28 10:46:18 2020
 """
 
 import argparse
-import matplotlib.pyplot as plt
-import matplotlib.animation as animation
-from matplotlib import style
 import numpy as np
 import serial
 import time
 import RPi.GPIO as GPIO
-import os.path
+import os
 import pandas as pd
 from time import sleep
 import datetime
+
+# change directory to document data folder
+os.chdir("/home/pi/Documents/data/")
 
 def append_weight(weight=[]):
     weight_list["Weight"].append(weight_data)
     weight_list["Time"].append(datetime.datetime.now().time())
     weight_list["Date"].append(datetime.datetime.now().date())
     
+    df_w = pd.DataFrame(weight_list)
+    print(df_w)
+
+    if not os.path.isfile(animaltag + "_weight.csv"):
+        df_w.to_csv(animaltag + "_weight.csv", encoding="utf-8-sig", index=False)
+    else:
+        df_w.to_csv(animaltag + "_weight.csv", mode="a+", header=False, encoding="utf-8-sig", index=False)
+    
 def append_event(cycles_str=[],event_type=[]):
     event_list["Rotation amount"].append(cycles_str)
     event_list["Type"].append(event_type)
     event_list["Time"].append(datetime.datetime.now().time())
     event_list["Date"].append(datetime.datetime.now().date())
+    
+    df_e = pd.DataFrame(event_list)
+    print(df_e)
+
+    if not os.path.isfile(animaltag + "_events.csv"):
+        df_e.to_csv(animaltag + "_events.csv", encoding="utf-8-sig", index=False)
+    else:
+        df_e.to_csv(animaltag + "_events.csv", mode="a+", header=False, encoding="utf-8-sig", index=False)
+
+
 
 weight_list = {
     "Weight": [],
@@ -111,6 +129,7 @@ flag=1
 counter=0
 cycle=1200 #cycle on running wheel gives approx this many counts
 run_flag=0
+food_flag=0
 
 while True:
     while True:
@@ -136,7 +155,7 @@ while True:
                 time_var = time.strftime("%H%M%S")
 
                 #Append data
-                append_event("+", "START OF SESSION")
+                append_event("+", "START")
                 
                 # switch mode and clean up RFID
                 MODE = 2
@@ -162,12 +181,8 @@ while True:
                 relProb_float = relProb_float*1000
                 ys.append(relProb_float)
             ser.close()
-            weight_data = str(sum(ys)/len(ys)) # average 
-            completeName = os.path.join("/home/pi/Desktop/RFID_scale/",  date_and_time[0:8] + animaltag + "_data.txt")
-            file1 = open(completeName, "a")# append data
-            L = animaltag + "\t" + date_and_time + "\t" + weight_data + "\n"   
-            file1.writelines(L)
-            file1.close() 
+            weight_data = sum(ys)/len(ys) # average
+            weight_data = str(round(weight_data,2)) # two digits of precision
             del ser_string
             del ser2
             del ys 
@@ -184,46 +199,51 @@ while True:
         if MODE == 3 and GPIO.input(ard_pi_2) and flag==1: #log a trial start
             print("\ntrial start\n")
             
+            if food_flag==1:
+                print("appending food pod data")
+                cycles_str = str(counter/cycle)
+                append_event(cycles_str, "Food")
+            
             if run_flag==1:
                 print("appending running wheel data")
                 cycles_str = str(counter/cycle)
-                append_event(cycles_str, "Running Wheel")
-            
+                append_event(cycles_str, "Run")
             #start camera capture/opto
             GPIO.output(Pi_capture_1,True)
             flag=0
             run_flag=0
+            food_flag=0
             counter=0
-            print(L)
-
-
-            
             
         if MODE == 3 and GPIO.input(ard_pi_3): #animal going back home
             print("\nMODE 4\n")
             GPIO.output(Pi_RFID,False)
-            #make a note
-            t3 = time.strftime("%Y%m%d-%H%M%S")      
-            file1 = open(completeName, "a")# append data
-            L = "\nreturn to cage\t" + t3 + "\n"
-            file1.writelines(L)
-            file1.close()
             #stop camera capture/opto
             GPIO.output(Pi_capture_1,False)
             time.sleep(10)#so the RFID doesn't read while animal is going back to cage
             MODE = 1
 
             #appending data to database
-            append_event("-", "END OF SESSION")
+            append_event("-", "END")
             
             #BREAK OUT OF THE INFINITE LOOP SO THAT THE DATA CAN BE EXPORTED
             break
                     
         if MODE == 3 and GPIO.input(ard_pi_4) and flag==0: #log a maze event food
             print("\nfood pod\n")
+            
             flag=1
-            #appending data to database
-            append_event("0", "Food pod")
+            food_flag=1
+            limit=cycle
+            
+        if food_flag==1: #record running wheel
+            clkState=GPIO.input(clk)
+            if clkState != clkLastState:
+                counter += 1  
+                clkLastState = clkState
+            if counter >= limit:
+                print(counter)    
+                limit=counter+cycle
 
         if MODE == 3 and GPIO.input(ard_pi_5) and flag==0: #log a maze event running wheel
             print("\nrunning wheel\n")
@@ -241,14 +261,4 @@ while True:
                 limit=counter+cycle
 
     print("finally")
-
-    df_w = pd.DataFrame(weight_list)
-    df_e = pd.DataFrame(event_list)
-    print(df_w, df_e)
-
-    if not os.path.isfile(animaltag + "_weight.csv"):
-        df_w.to_csv(animaltag + "_weight.csv", encoding="utf-8-sig", index=False)
-        df_e.to_csv(animaltag + "_events.csv", encoding="utf-8-sig", index=False)
-    else:
-        df_w.to_csv(animaltag + "_weight.csv", mode="a+", header=False, encoding="utf-8-sig", index=False)
-        df_e.to_csv(animaltag + "_events.csv", mode="a+", header=False, encoding="utf-8-sig", index=False)
+    
