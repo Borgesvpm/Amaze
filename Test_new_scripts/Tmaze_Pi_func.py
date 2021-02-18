@@ -1,6 +1,10 @@
 # -*- coding: utf-8 -*-
 """
 Created on Wed Oct 28 10:46:18 2020
+<<<<<<< HEAD
+
+=======
+>>>>>>> ce3e9cf2026392454619ba7333308c1c6968f938
 @author: Vinicius 
 """
 
@@ -12,15 +16,13 @@ import RPi.GPIO as GPIO
 import os
 import pandas as pd
 from time import sleep
-import datetime
+from datetime import datetime
 
 # change directory to document data folder
 os.chdir("/home/pi/Documents/data/")
 
 def append_weight(weight=[]):
     weight_list["Weight"].append(weight_data)
-    weight_list["Time"].append(datetime.datetime.now().time())
-    weight_list["Date"].append(datetime.datetime.now().date())
     
     df_w = pd.DataFrame(weight_list)
     print(df_w)
@@ -33,8 +35,7 @@ def append_weight(weight=[]):
 def append_event(cycles_str=[],event_type=[]):
     event_list["Rotation amount"].append(cycles_str)
     event_list["Type"].append(event_type)
-    event_list["Time"].append(datetime.datetime.now().time())
-    event_list["Date"].append(datetime.datetime.now().date())
+    event_list["Date and Time"].append(datetime.now())
     
     df_e = pd.DataFrame(event_list)
     print(df_e)
@@ -48,15 +49,13 @@ def append_event(cycles_str=[],event_type=[]):
 
 weight_list = {
     "Weight": [],
-    "Time": [],
-    "Date": []
+    "Date and Time": []
 }
 
 event_list = {
     "Rotation amount": [],
     "Type" : [],
-    "Time": [],
-    "Date": []
+    "Date and Time": []
 }
 
 #initialize serial port for OpenScale
