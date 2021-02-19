@@ -30,7 +30,7 @@ const int ard_pi_4 = 11;  // reports food pod entry to Pi
 const int ard_pi_5 = 2;  // reports running wheel pod entry to Pi
 
 const int CLOSE_DOOR1 = 135;      // Angle of 135 degrees -> door is closed
-const int OPEN_DOOR1 = 20;     // Angle of 20 degrees -> door is opened
+const int OPEN_DOOR1 = 30;     // Angle of 20 degrees -> door is opened
 const int CLOSE_DOOR2 = 155;      // Angle of 155 degrees -> door is closed
 const int OPEN_DOOR2 = 20;        // 20
 const int CLOSE_DOOR3 = 159;      // Angle of 157 degrees -> middle passage is closed
@@ -295,7 +295,7 @@ pos5=pos5-1;
   if (flag == 1){
   if (photo_value2 < 0.8*INIT_READ2){   
     flag=0;
-    Serial.println("new trial available"); 
+    Serial.println("trial"); 
     digitalWrite(ard_pi_2, HIGH);//pulse to Pi new trial
     for (pos = CLOSE_DOOR3; pos >= OPEN_DOOR3; pos -= 1) { // open
     servo3.write(pos);           
@@ -319,7 +319,7 @@ Serial.println(MODE);
    if (MODE==4){ 
      //going back to cage
      servo1.write(OPEN_DOOR1);
-if (photo_value4 < 0.95*INIT_READ4){    // values needs to be adjusted based on ambient light
+if (photo_value4 < 0.8*INIT_READ4){    // values needs to be adjusted based on ambient light
      servo1.write(CLOSE_DOOR1);
      delay(100);
      digitalWrite(ard_pi_3, HIGH);//pulse to Pi to sync to MODE 1.
