@@ -5,19 +5,30 @@ Created on Wed Oct 28 10:46:18 2020
 @author: Vinicius 
 """
 
-import argparse
-import numpy as np
 import serial
 import time
 import RPi.GPIO as GPIO
 import os
 import pandas as pd
-from time import sleep
 from datetime import datetime
 
 # change directory to document data folder
 os.chdir("/home/pi/Documents/data/")
 
+
+# function used to append weight data. 
+"""
+It uses the weight_list variable dictionary list to create a structured .csv file.
+Whenever the function is called, datetime.now() is ran to update the current date and time.
+If the RFID tag has been seen before, the data is appended to the existing file.
+If the RFID tag has never been seen before, a new file is created.
+
+CSV output looks like:
+Weight Date_Time
+3.4    2021-02-20 14:03:00.228348
+4.3    2021-02-20 15:02:51.248299
+2.5    2021-02-21 12:25:40.663348
+"""
 def append_weight(weight=[]):
     weight_list.update({'Weight': [weight_data]})
     weight_list.update({'Date_Time': [datetime.now()]})
@@ -30,6 +41,15 @@ def append_weight(weight=[]):
     else:
         df_w.to_csv(animaltag + "_weight.csv", mode="a+", header=False, encoding="utf-8-sig", index=False)
     
+# Exact same structure as append_weight, but it has three variables instead
+"""
+CSV output looks like:
+Rotation  Type  Date_Time
++         START 2021-02-20 14:03:00.228348
+5.225     Food  2021-02-20 14:04:02.724573
+2.652     Run   2021-02-20 14:05:52.846536
+-         END   2021-02-21 14:07:23.543257
+"""
 def append_event(cycles_str=[],event_type=[]):
     event_list.update({'Rotation': [cycles_str]})
     event_list.update({'Type': [event_type]})
@@ -43,8 +63,7 @@ def append_event(cycles_str=[],event_type=[]):
     else:
         df_e.to_csv(animaltag + "_events.csv", mode="a+", header=False, encoding="utf-8-sig", index=False)
 
-
-
+# creates empty dictionaries for the weight_list and event_list (it is a dictionary because of Pandas compatibility)
 weight_list = {
     "Weight": [],
     "Date_Time": []
@@ -56,12 +75,14 @@ event_list = {
     "Date_Time": []
 }
 
+# should we consolidate the following code? It does the same thing for two USB devices.
+
 #initialize serial port for OpenScale
 ser = serial.Serial()
 ser.port = '/dev/ttyUSB0' #Arduino serial port
 ser.baudrate = 9600
-ser.timeout = 100000
-#specify timeout when using readline()
+ser.timeout = 100000 # we do not want the device to timeout
+# test device connection
 ser.open()
 ser.flush()
 if ser.is_open==True:
@@ -73,7 +94,8 @@ ser.close()
 serRFID = serial.Serial()
 serRFID.port = '/dev/ttyUSB1' #Arduino serial port
 serRFID.baudrate = 9600
-serRFID.timeout = 100000 #specify timeout when using readline()
+serRFID.timeout = 100000 # we do not want the device to timeout
+# test device connection
 serRFID.open()
 if serRFID.is_open==True:
     print("\nRFID antenna ok. Configuration:\n")
@@ -81,36 +103,35 @@ if serRFID.is_open==True:
 serRFID.close()
 
 # set GPIO numbering mode
-GPIO.setmode(GPIO.BOARD)
+GPIO.setmode(GPIO.BOARD) 
 
 # set pin inputs from arduino
-ard_pi_1 = 35
-ard_pi_2 = 36
-ard_pi_3 = 37
-ard_pi_4 = 38
-ard_pi_5 = 33
-GPIO.setup(ard_pi_1,GPIO.IN)
-GPIO.setup(ard_pi_2,GPIO.IN)
-GPIO.setup(ard_pi_3,GPIO.IN)
-GPIO.setup(ard_pi_4,GPIO.IN)
-GPIO.setup(ard_pi_5,GPIO.IN)
+beam_break_1 = 35 # beam break 1
+beam_break_2 = 36
+beam_break_3 = 33
+beam_break_4 = 38
+beam_break_5 = 37
+clk=12 # clock for running wheel
 
-#set pin inputs from running wheel rotary encoder
-clk=12
-# dt=11
+GPIO.setup(beam_break_1,GPIO.IN)
+GPIO.setup(beam_break_2,GPIO.IN)
+GPIO.setup(beam_break_3,GPIO.IN)
+GPIO.setup(beam_break_4,GPIO.IN)
+GPIO.setup(beam_break_5,GPIO.IN)
 GPIO.setup(clk,GPIO.IN)
-# GPIO.setup(dt,GPIO.IN)
 clkLastState=GPIO.input(clk)
 
 # set pin outputs to arduino
-Pi_RFID = 16
+Pi_RFID = 16 
 Pi_scale = 15
-Pi_capture_1=40
-PiArd_reset=18
+Pi_capture_1 = 40
+PiArd_reset = 18 # reset arduino whenever script is run
+
 GPIO.setup(Pi_RFID,GPIO.OUT)
 GPIO.setup(Pi_scale,GPIO.OUT)
 GPIO.setup(Pi_capture_1,GPIO.OUT)
 GPIO.setup(PiArd_reset,GPIO.OUT)
+
 GPIO.output(Pi_RFID,False)
 GPIO.output(Pi_scale,False)
 GPIO.output(Pi_capture_1,False)
@@ -119,22 +140,29 @@ time.sleep(0.3)
 GPIO.output(PiArd_reset,True)
 
 #state variables
-beam_break_flag = 0
-task_complete = 0
 MODE = 1
-flag=1
-counter=0
-cycle=1200 #cycle on running wheel gives approx this many counts
-run_flag=0
-food_flag=0
+"""
+MODE 1 = Listening for RFID input
+MODE 2 = Listening for Beam Break 1 (after it is triggered, the animal will be weighed)
+MODE 3 = Listening for Beam Break 2 (after it is triggered, the Pi camera is activated) and Beam Break 5 (after it is triggered, the animal has finished the session)
+    - flag 1 = The animal is inside the maze and it will be able to choose between left and right
+    - flag 0 = The animal has made a choice, either left or right
+"""
+flag = 1 # see illustration for flag system
+cycle=1200 # cycle on running wheel gives approx this many counts
+run_flag = 0
+food_flag = 0
+counter = 0
 
-while True:
-    while True:
-        if MODE == 1:
+while True: # this infinite loop means that the system is always waiting for the RFID signal to start a new session
+    while True: # this infinite loop is broken after one session is complete
+        if MODE == 1: # 
             print("\nMODE 1\n")
+
             serRFID.open()
-            serRFID.flush()
-            ser2 = serRFID.readline()
+            serRFID.flush() # waits for transmission of outgoing serial data to be completed
+
+            ser2 = serRFID.readline() # RFID string
             ser_string = str(ser2)
             print(ser_string)
                 
@@ -142,14 +170,9 @@ while True:
                 # trigger arduino to open servo1
                 print('Sending Pi_RFID pulse to Arduino')
                 GPIO.output(Pi_RFID,True) # start signal = high
-                # fixing animal tag 
-                ind = ser_string.find("x")
+                # fixing animal tag (removes unnecessary characters)
                 animaltag = ser_string[len(ser_string)-19:len(ser_string)-5]
                 print(ser_string)
-                # getting date and time of trial start
-                date_and_time = time.strftime("%Y%m%d-%H%M%S")
-                date_var = time.strftime("%Y%m%d")
-                time_var = time.strftime("%H%M%S")
 
                 #Append data
                 append_event("+", "START")
@@ -159,30 +182,36 @@ while True:
                 serRFID.close()
             print("\nMODE 2\n")
 
-        if MODE == 2 and GPIO.input(ard_pi_1): 
+        if MODE == 2 and GPIO.input(beam_break_1): 
             print("\nMODE 2\n")
-            GPIO.output(Pi_RFID,False)
-            ys = [] #store weights here
+            GPIO.output(Pi_RFID,False) # closes door behind animal
+            openscale = [] #store weight list
+
             ser.open()
             ser.flush()
-            for x in range(8): # chuck two lines 
+            for x in range(8): # chuck eight lines of garbage 
                 line=ser.readline()
                 print(line)
-            for x in range(20): # bag 20lines*400ms=8s of data 
+            for x in range(20): # read 20lines*400ms=8s of data points
                 line=ser.readline()
                 print(line)
+                # fixing string and converts to float
                 line_as_list = line.split(b',')
                 relProb = line_as_list[1]
                 relProb_as_list = relProb.split(b'\n')
                 relProb_float = float(relProb_as_list[0])
-                relProb_float = relProb_float*1000
-                ys.append(relProb_float)
+                relProb_float = relProb_float*1000 # kg to g
+                openscale.append(relProb_float) # appends to list
+
             ser.close()
-            weight_data = sum(ys)/len(ys) # average
-            weight_data = str(round(weight_data,2)) # two digits of precision
+            weight_data = sum(openscale)/len(openscale) # average of data points
+            # TO DO: CHECK IF STRING CONVERSION IS NECESSARY
+            weight_data = str(round(weight_data,2)) # two digits of precision and converts to str
+
+            # needs to be deleted for the next session
             del ser_string
             del ser2
-            del ys 
+            del openscale
             GPIO.output(Pi_RFID,True) # start signal = high
 
             #appending data to database
@@ -193,17 +222,17 @@ while True:
             flag=1
             print("\nMODE 3\n")
                         
-        if MODE == 3 and GPIO.input(ard_pi_2) and flag==1: #log a trial start
+        if MODE == 3 and GPIO.input(beam_break_2) and flag==1: #log a trial start
             print("\ntrial start\n")
             
             if food_flag==1:
                 print("appending food pod data")
-                cycles_str = str(counter/cycle)
+                cycles_str = str(round(counter/cycle, 2))
                 append_event(cycles_str, "Food")
             
             if run_flag==1:
                 print("appending running wheel data")
-                cycles_str = str(counter/cycle)
+                cycles_str = str(round(counter/cycle, 2))
                 append_event(cycles_str, "Run")
             #start camera capture/opto
             GPIO.output(Pi_capture_1,True)
@@ -212,28 +241,30 @@ while True:
             food_flag=0
             counter=0
             
-        if MODE == 3 and GPIO.input(ard_pi_3): #animal going back home
-            print("\nMODE 4\n")
-            GPIO.output(Pi_RFID,False)
-            #stop camera capture/opto
+        if MODE == 3 and GPIO.input(beam_break_5): #animal going back home
+            print("\nAnimal is returning to home cage\n")
+            GPIO.output(Pi_RFID,False) #stop camera capture/opto
             GPIO.output(Pi_capture_1,False)
-            time.sleep(10)#so the RFID doesn't read while animal is going back to cage
+            # Search for better alternatives
+            time.sleep(10) #so the RFID doesn't read while animal is going back to cage
             MODE = 1
 
             #appending data to database
             append_event("-", "END")
             
-            #BREAK OUT OF THE INFINITE LOOP SO THAT THE DATA CAN BE EXPORTED
+            #BREAK OUT OF THE SESSION INFINITE LOOP
             break
                     
-        if MODE == 3 and GPIO.input(ard_pi_4) and flag==0: #log a maze event food
+        if MODE == 3 and GPIO.input(beam_break_4) and flag==0: #log a maze event food
             print("\nfood pod\n")
+            # more features to be added later: Pellet dispenser integration
             
             flag=1
             food_flag=1
             limit=cycle
             
         if food_flag==1: #record running wheel
+            # to do: consolidate into function
             clkState=GPIO.input(clk)
             if clkState != clkLastState:
                 counter += 1  
@@ -242,12 +273,13 @@ while True:
                 print(counter)    
                 limit=counter+cycle
 
-        if MODE == 3 and GPIO.input(ard_pi_5) and flag==0: #log a maze event running wheel
+        if MODE == 3 and GPIO.input(beam_break_5) and flag==0: #log a maze event running wheel
             print("\nrunning wheel\n")
             
             flag=1
             run_flag=1
             limit=cycle
+
         if run_flag==1: #record running wheel
             clkState=GPIO.input(clk)
             if clkState != clkLastState:
