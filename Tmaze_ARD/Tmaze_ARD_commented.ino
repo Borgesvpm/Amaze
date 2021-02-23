@@ -13,9 +13,9 @@ Servo servo5;     // Servo 5 = food pod
 long interval = 60000; //CHANGE THIS TO CHANGE POD TIMING
 const int pResistor1 = A0; // BB1
 const int pResistor2 = A1; // BB2
-const int pResistor3 = A2; //BB4 choice running wheel
-const int pResistor4 = A3; // BB5
-const int pResistor5 = A4; //BB3 choice food pod
+const int pResistor3 = A2; //BB3 choice running wheel
+const int pResistor4 = A3; // BB4
+const int pResistor5 = A4; //BB5 choice food pod
 
 const int servoPin1 = 4;      // control servos 1-3
 const int servoPin2 = 5;
@@ -88,9 +88,14 @@ void setup(){
 
 
 servo1.attach(servoPin1);
-  servo1.write(OPEN_DOOR1);
+    for (pos = CLOSE_DOOR1; pos >= OPEN_DOOR1; pos -= 1) { // open
+    servo1.write(pos);           
+    delay(8);                    
+  }
   delay(1000);
-  servo1.write(CLOSE_DOOR1);
+    for (pos = CLOSE_DOOR1; pos >= OPEN_DOOR1; pos -= 1) { // open
+    servo1.write(pos);           
+    delay(7);   
   delay(1000);
 servo2.attach(servoPin2);
   servo2.write(OPEN_DOOR2);
@@ -215,34 +220,34 @@ if (MODE==3){ //Animal in T-maze deciding: food pod, running wheel or go home.
   //maze start scenario
   photo_value3 = analogRead(pResistor3);
   photo_value5 = analogRead(pResistor5);
-  if (flag == 0){
-  if (photo_value3 < 0.7*INIT_READ3){   //in run wheel pod
-    flag = 1; maze_mode=1;time_flag=1;tic=millis();
+  if (flag == 0){ //coming from start side
+  if (photo_value3 < 0.7*INIT_READ3){   //entered run wheel pod
+    flag = 1; maze_mode=1;time_flag=1;tic=millis(); //set flags and start timer
     Serial.println("enter runwheel pod"); 
     digitalWrite(ard_pi_5, HIGH);//pulse to Pi to say runwheel pod entry.
-    for (pos = OPEN_DOOR3; pos <= CLOSE_DOOR3; pos += 1) { // close
+    for (pos = OPEN_DOOR3; pos <= CLOSE_DOOR3; pos += 1) { // close door 3 gently
     servo3.write(pos);     
     delay(8);              
   }
 
-    servo4.write(RELEASE_WHEEL);
+    servo4.write(RELEASE_WHEEL); //release running wheel so animal can run in pod
   delay(10);
     digitalWrite(ard_pi_5, LOW);//end pulse to Pi.
   }
     if (photo_value5 < 0.7*INIT_READ5){   //in food pod
-    flag = 1; maze_mode=1;time_flag=1;tic=millis();
+    flag = 1; maze_mode=1;time_flag=1;tic=millis(); //set flags and start timer
     Serial.println("enter food pod"); 
     digitalWrite(ard_pi_4, HIGH);//pulse to Pi to say foodpod entry.
-    for (pos = OPEN_DOOR3; pos <= CLOSE_DOOR3; pos += 1) { // close
+    for (pos = OPEN_DOOR3; pos <= CLOSE_DOOR3; pos += 1) { // close door 3 gently
     servo3.write(pos);     
     delay(8);              
   }
-      servo4.write(RELEASE_WHEEL);
+      servo4.write(RELEASE_WHEEL); //release running wheel for consistency even when animal entered food pod.
   delay(10);
     digitalWrite(ard_pi_4, LOW);//end pulse to Pi.
   }}
 
-if (flag == 1){
+if (flag == 1){ //
   if (maze_mode==1){//non-blocking loop to move food to center without delays to code since animal could go elsewhere.
     if (time_flag==1){tic2=millis();time_flag=0;}
     if (pos5 < SHOW_FOOD){
