@@ -1,25 +1,15 @@
 class OpenScale:
-    from datetime import datetime
-    import pandas as pd
-    import os
-    
-    weight_list = {
-    "Weight": [],
-    "Date_Time": []
-    }
+    def __init__(self, port = "COM15", weight_data = [], animaltag = "test"):
+        self.port = port
+        self.weight_data = weight_data
+        self.animaltag = animaltag
 
-    animaltag = "TEST1234"
-
-    def __init__(self):
-        pass
-    def USB_port(self, port):
-        return port
     def acquire_weight(self, num_readings):
         import serial
         import statistics as stats
         openscale = [] #store weight list
         serOS = serial.Serial()
-        serOS.port = OpenScale.USB_port.port
+        serOS.port = self.port
         serOS.open()
         serOS.flush()
         for x in range(8): # chuck eight lines of garbage 
@@ -38,13 +28,17 @@ class OpenScale:
         serOS.close()
 
         try:
-            weight_data = stats.mode(openscale) # average of data points
+            self.weight_data = stats.mode(openscale) # average of data points
         except:
-            weight_data = stats.median(openscale)
-        weight_data = round(weight_data,2) # two digits of precision
+            self.weight_data = stats.median(openscale)
+        self.weight_data = round(self.weight_data,2) # two digits of precision
         #appending data to database
-        return weight_data
+        return self.weight_data
+        OpenScale.append_weight(self.weight_data)
     def append_weight(self, weight_data):
+        from datetime import datetime
+        import pandas as pd
+        import os
         """
         It uses the weight_list variable dictionary list to create a structured .csv file.
         Whenever the function is called, datetime.now() is ran to update the current date and time.
@@ -56,16 +50,37 @@ class OpenScale:
         4.3    2021-02-20 15:02:51.248299
         2.5    2021-02-21 12:25:40.663348
         """
-        OpenScale.weight_list.update({'Weight': [weight_data]})
+
+        weight_list = {
+        "Weight": [],
+        "Date_Time": []
+        }
+
+        weight_list.update({'Weight': [self.weight_data]})
         weight_list.update({'Date_Time': [datetime.now()]})
         
         df_w = pd.DataFrame(weight_list)
         print(df_w)
 
-        if not os.path.isfile(animaltag + "_weight.csv"):
-            df_w.to_csv(animaltag + "_weight.csv", encoding="utf-8-sig", index=False)
+        if not os.path.isfile(self.animaltag + "_weight.csv"):
+            df_w.to_csv(self.animaltag + "_weight.csv", encoding="utf-8-sig", index=False)
         else:
-            df_w.to_csv(animaltag + "_weight.csv", mode="a+", header=False, encoding="utf-8-sig", index=False)
+            df_w.to_csv(self.animaltag + "_weight.csv", mode="a+", header=False, encoding="utf-8-sig", index=False)
+    
+    def test_data(self, num_rows):
+        import random
+        from time import sleep
+        x = OpenScale()
+        self.animaltag = input("What is the name of the test file? ")
+        
+        for i in range(num_rows):
+            self.weight_data = random.uniform(15, 20)
+            
+            print(self.weight_data)
+            x.append_weight(self.weight_data)
+            sleep(random.randint(1,3))
+        return self.weight_data
+        
 
 
 class RFID:
@@ -96,14 +111,14 @@ class RFID:
         serRFID.flush() # waits for transmission of outgoing serial data to be completed
         ser2 = serRFID.readline() # RFID string
         ser_string = str(ser2)
-        animaltag = ser_string[len(ser_string)-19:len(ser_string)-5]
-        print(animaltag)
+        self.animaltag = ser_string[len(ser_string)-19:len(ser_string)-5]
+        print(self.animaltag)
 
-        if animaltag == "0220082200B2B8":
+        if self.animaltag == "0220082200B2B8":
             print("Animal 119010")
-        elif animaltag == "02200822005359":
+        elif self.animaltag == "02200822005359":
             print("Animal 119011")
-        elif animaltag == "02200822004248":
+        elif self.animaltag == "02200822004248":
             print("Animal 119012")
 
     def test(self):
@@ -113,11 +128,19 @@ class RFID:
 class BeamBreak:
     def __init__(self):
         pass
-    def setup(self):
+    def Setup_Input(self, GPIO_number):
+        import GPIO
+        GPIO.setmode(GPIO.BOARD) 
+        # set pin inputs from arduino
+        beam_break_1 = 35 
+        beam_break_2 = 36
+        beam_break_3 = 33
+        beam_break_4 = 38
+        beam_break_5 = 37
         pass
 
 
-class Servo:
+class ServoDoor:
     pass
 
 
@@ -129,7 +152,14 @@ class FoodPod:
     pass
 
 
-r = RFID("COM14")
+#r = RFID("COM14")
 
-while True:
-    r.treated_string()
+#while True:
+#    r.treated_string()
+
+#weight = OpenScale()
+#x = weight.acquire_weight(10)
+#print(x) 
+
+w = OpenScale("test")
+w.test_data(3)
