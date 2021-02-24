@@ -70,16 +70,14 @@ class OpenScale:
     def test_data(self, num_rows):
         import random
         from time import sleep
-        x = OpenScale()
         self.animaltag = input("What is the name of the test file? ")
         
         for i in range(num_rows):
             self.weight_data = random.uniform(15, 20)
             
             print(self.weight_data)
-            x.append_weight(self.weight_data)
+            OpenScale.append_weight(self,self.weight_data)
             sleep(random.randint(1,3))
-        return self.weight_data
         
 
 
