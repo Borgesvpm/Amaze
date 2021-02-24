@@ -119,23 +119,15 @@ class RFID:
         elif self.animaltag == "02200822004248":
             print("Animal 119012")
 
-    def test(self):
-        pass
+    def test_string(self):
+        import random
+        import string
+        letters = string.digits
+        return ''.join(random.choice(letters) for i in range(14))
 
 
 class BeamBreak:
-    def __init__(self):
-        pass
-    def Setup_Input(self, GPIO_number):
-        import GPIO
-        GPIO.setmode(GPIO.BOARD) 
-        # set pin inputs from arduino
-        beam_break_1 = 35 
-        beam_break_2 = 36
-        beam_break_3 = 33
-        beam_break_4 = 38
-        beam_break_5 = 37
-        pass
+    pass
 
 
 class ServoDoor:
@@ -159,5 +151,9 @@ class FoodPod:
 #x = weight.acquire_weight(10)
 #print(x) 
 
-w = OpenScale("test")
-w.test_data(3)
+#w = OpenScale("test")
+#w.test_data(3)
+
+r = RFID("TEST")
+x = r.test_string()
+print(x)
