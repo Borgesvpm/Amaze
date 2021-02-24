@@ -1,18 +1,3 @@
-class BeamBreak:
-    def __init__(self):
-        pass
-    def setup(self):
-        pass
-
-class RFID:
-    def __init__(self):
-        pass
-    def rawstring(self):
-        pass
-    def test(self):
-        pass
-
-
 class OpenScale:
     from datetime import datetime
     import pandas as pd
@@ -27,12 +12,14 @@ class OpenScale:
 
     def __init__(self):
         pass
+    def USB_port(self, port):
+        return port
     def acquire_weight(self, num_readings):
         import serial
         import statistics as stats
         openscale = [] #store weight list
         serOS = serial.Serial()
-        serOS.port = "COM15"
+        serOS.port = OpenScale.USB_port.port
         serOS.open()
         serOS.flush()
         for x in range(8): # chuck eight lines of garbage 
@@ -81,6 +68,55 @@ class OpenScale:
             df_w.to_csv(animaltag + "_weight.csv", mode="a+", header=False, encoding="utf-8-sig", index=False)
 
 
+class RFID:
+    def __init__(self, port):
+        self.port = port
+
+        """
+        Database of tags (example):
+        0220082200B2B8 = 119010 (left cut)
+        02200822005359 = 119011 (right cut)
+        02200822004248 = 119012 (right circle)
+        """ 
+
+    def raw_string(self):
+        import serial
+        serRFID = serial.Serial()
+        serRFID.port = self.port
+        serRFID.open()
+        serRFID.flush() # waits for transmission of outgoing serial data to be completed
+        ser2 = serRFID.readline() # RFID string
+        print(ser2)
+
+    def treated_string(self):
+        import serial
+        serRFID = serial.Serial()
+        serRFID.port = self.port
+        serRFID.open()
+        serRFID.flush() # waits for transmission of outgoing serial data to be completed
+        ser2 = serRFID.readline() # RFID string
+        ser_string = str(ser2)
+        animaltag = ser_string[len(ser_string)-19:len(ser_string)-5]
+        print(animaltag)
+
+        if animaltag == "0220082200B2B8":
+            print("Animal 119010")
+        elif animaltag == "02200822005359":
+            print("Animal 119011")
+        elif animaltag == "02200822004248":
+            print("Animal 119012")
+
+    def test(self):
+        pass
+
+
+class BeamBreak:
+    def __init__(self):
+        pass
+    def setup(self):
+        pass
+
+
 class Servo:
     pass
 
@@ -93,6 +129,7 @@ class FoodPod:
     pass
 
 
-weight = OpenScale()
-x = weight.acquire_weight(10)
-print(x)
+r = RFID("COM14")
+
+while True:
+    r.treated_string()
