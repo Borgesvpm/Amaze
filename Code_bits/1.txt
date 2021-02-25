@@ -1,0 +1,17 @@
+File created on 2021-02-25 15:55:30.116282
+Animal number: 1
+Short hand: LEFT_CUT
+RFID tag: 13234545
+
+2021-02-25 15:55:49.501420
+ANimal is sleeping
+
+2021-02-25 15:55:51.084224
+fafsafs
+
+2021-02-25 15:55:51.660603
+asffas
+
+2021-02-25 15:55:52.356092
+asf
+
