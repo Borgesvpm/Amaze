@@ -10,7 +10,7 @@ Servo servo4;     // Servo 4 = running-wheel brake
 Servo servo5;     // Servo 5 = food pod
  
 //Constants
-long interval = 60000; //CHANGE THIS TO CHANGE POD TIMING
+long interval = 20000; //CHANGE THIS TO CHANGE POD TIMING
 const int pResistor1 = A0; // BB1
 const int pResistor2 = A1; // BB2
 const int pResistor3 = A2; //BB3 choice running wheel
@@ -29,7 +29,7 @@ const int ard_pi_3 = 10;  // reports MODE=1 to Pi
 const int ard_pi_4 = 11;  // reports food pod entry to Pi
 const int ard_pi_5 = 2;  // reports running wheel pod entry to Pi
 
-const int CLOSE_DOOR1 = 135;// Angle of 135 degrees -> door is closed
+const int CLOSE_DOOR1 = 130;// Angle of 135 degrees -> door is closed
 const int OPEN_DOOR1 = 40;     // Angle of 20 degrees -> door is opened
 const int HELP_DOOR1 = 50;     //help on close so it does not get stuck
 const int CLOSE_DOOR2 = 155;      // Angle of 155 degrees -> door is closed
@@ -90,6 +90,10 @@ void setup(){
 
 
 servo1.attach(servoPin1);
+  servo1.write(OPEN_DOOR1);
+  delay(100);
+  servo1.write(CLOSE_DOOR1); 
+  delay(100);
   servo1.write(OPEN_DOOR1);
   delay(1000);
     servo1.write(CLOSE_DOOR1); 
@@ -180,8 +184,8 @@ START=digitalRead(pi_ard_1);//RFID INPUT from Pi
 
 if (MODE==1){ //home cage
 if (START == 1){
-    servo1.write(OPEN_DOOR1);
-    delay(100);
+  servo1.write(OPEN_DOOR1);
+  delay(100);
   photo_value1 = analogRead(pResistor1);
   if (photo_value1 < 0.8*INIT_READ1){    // BEAM BREAK DEFINITION. Factor can be adjusted based on ambient light.
     Serial.println("animal in scale"); 
@@ -223,10 +227,10 @@ if (MODE==3){ //Animal in T-maze deciding: food pod, running wheel or go home.
   // maze_mode=1,2,3 for (1=open rewards, 2=countdown timer, 3=close rewards)
   
   //maze start scenario
-  photo_value5 = analogRead(pResistor5);
+  photo_value3 = analogRead(pResistor3);
   photo_value4 = analogRead(pResistor4);
   if (flag == 0){
-  if (photo_value5 < 0.7*INIT_READ5){   //in run wheel pod
+  if (photo_value3 < 0.7*INIT_READ3){   //in run wheel pod
     flag = 1; maze_mode=1;time_flag=1;tic=millis();
     Serial.println("enter runwheel pod"); 
     digitalWrite(ard_pi_5, HIGH);//pulse to Pi to say runwheel pod entry.
@@ -327,7 +331,7 @@ Serial.println(MODE);
    if (MODE==4){ 
      //going back to cage
      servo1.write(OPEN_DOOR1);
-if (photo_value3 < 0.8*INIT_READ3){ //BB5 tripped
+if (photo_value5 < 0.8*INIT_READ5){ //BB5 tripped
     servo1.write(CLOSE_DOOR1); //trap animal in home cage
     delay(100);
     servo1.write(HELP_DOOR1); //unstick door1
