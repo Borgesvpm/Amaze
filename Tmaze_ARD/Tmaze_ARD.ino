@@ -28,6 +28,7 @@ const int ard_pi_2 = 9;     // reports trial start to Pi
 const int ard_pi_3 = 10;  // reports MODE=1 to Pi
 const int ard_pi_4 = 11;  // reports food pod entry to Pi
 const int ard_pi_5 = 2;  // reports running wheel pod entry to Pi
+const int pelletPin = 1; // pinout for pellet dispenser
 
 const int CLOSE_DOOR1 = 135;      // Angle of 135 degrees -> door is closed
 const int OPEN_DOOR1 = 30;     // Angle of 20 degrees -> door is opened
@@ -38,7 +39,8 @@ const int OPEN_DOOR3 = 87;        // 89
 const int RELEASE_WHEEL = 100;      // Angle of 100 degrees -> WHEEL is free
 const int BRAKE_WHEEL = 20;  //20 CLAMPED
 const int SHOW_FOOD = 170;      // Angle of 120 degrees -> FOOD IN CENTER
-const int HIDE_FOOD = 123;  //175 HIDDEN
+const int HIDE_FOOD = 127;  //123 HIDDEN
+
 
 const int pi_ard_1 = 12;      // receive RFID command from Pi 
 const int pi_ard_2 = 13;       // receive weight decision from Pi
@@ -78,7 +80,8 @@ void setup(){
   pinMode(pResistor4, INPUT);
   pinMode(pResistor5, INPUT);
   pinMode(ard_pi_1, OUTPUT);  //output reports to Pi
-  pinMode(ard_pi_2, OUTPUT);  
+  pinMode(ard_pi_2, OUTPUT); 
+  pinMode(pelletPin, OUTPUT); //pellet dis
   pinMode(ard_pi_3, OUTPUT); 
   pinMode(ard_pi_4, OUTPUT); 
   pinMode(ard_pi_5, OUTPUT); 
@@ -129,6 +132,7 @@ delay(1000);
   digitalWrite(ard_pi_3, LOW);
   digitalWrite(ard_pi_4, LOW);
   digitalWrite(ard_pi_5, LOW);
+  digitalWrite(pelletPin, LOW);
 
   INIT_READ1 = analogRead(pResistor1);
   INIT_READ2 = analogRead(pResistor2);
@@ -245,7 +249,7 @@ if (MODE==3){
 
 if (flag == 1){
   if (maze_mode==1){//non-blocking loop to move food to center without delays to code since animal could go elsewhere.
-    if (time_flag==1){tic2=millis();time_flag=0;}
+    if (time_flag==1){tic2=millis();time_flag=0;digitalWrite(pelletPin, HIGH);}
     if (pos5 < SHOW_FOOD){
     duration2=millis()-tic2;
 if (duration2>30){
@@ -254,7 +258,7 @@ pos5=pos5+1;tic2=millis();
     }}
     }
     if (pos5 == SHOW_FOOD){
-      maze_mode=2; pos5=SHOW_FOOD-1;time_flag2=1;
+      maze_mode=2; pos5=SHOW_FOOD-1;time_flag2=1;digitalWrite(pelletPin, LOW);
     }
   if (maze_mode==2){
     duration=millis()-tic;

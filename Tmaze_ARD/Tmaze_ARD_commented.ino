@@ -22,6 +22,7 @@ const int servoPin2 = 5;
 const int servoPin3 = 6;
 const int servoPin4 = 7;// control brake servo in running wheel
 const int servoPin5 = 3;// control food servo in hunting chamber
+const int pelletPin = 1; // pinout for pellet dispenser
 
 const int ard_pi_1 = 8;      // reports MODE=2 to Pi 
 const int ard_pi_2 = 9;     // reports trial start to Pi
@@ -84,6 +85,8 @@ void setup(){
   pinMode(ard_pi_3, OUTPUT); 
   pinMode(ard_pi_4, OUTPUT); 
   pinMode(ard_pi_5, OUTPUT); 
+  pinMode(ard_pi_1, OUTPUT);  //output reports to Pi
+  pinMode(pelletPin, OUTPUT); //pellet dis
   pinMode(pi_ard_1, INPUT);// input commands from Pi
   pinMode(pi_ard_2, INPUT);
     
@@ -139,7 +142,8 @@ delay(1000);
   digitalWrite(ard_pi_3, LOW);
   digitalWrite(ard_pi_4, LOW);
   digitalWrite(ard_pi_5, LOW);
-
+  digitalWrite(pelletPin, LOW);
+  
   INIT_READ1 = analogRead(pResistor1); // calibrate beam-breaks
   INIT_READ2 = analogRead(pResistor2);
   INIT_READ3 = analogRead(pResistor3);
@@ -258,7 +262,7 @@ if (MODE==3){ //Animal in T-maze deciding: food pod, running wheel or go home.
 
 if (flag == 1){
   if (maze_mode==1){//non-blocking loop to move food to center without delays to code since animal could go elsewhere.
-    if (time_flag==1){tic2=millis();time_flag=0;} //time_flag allows tic2 to be updated only once at start
+    if (time_flag==1){tic2=millis();time_flag=0;digitalWrite(pelletPin, HIGH);} //time_flag allows tic2 to be updated only once at start
     if (pos5 < SHOW_FOOD){
     duration2=millis()-tic2;
 if (duration2>FOOD_SPEED){
@@ -267,7 +271,7 @@ pos5=pos5+1;tic2=millis(); //when FOOD_SPEED 20ms has passed, servo moves 1deg a
     }}
     }
     if (pos5 == SHOW_FOOD){
-      maze_mode=2; pos5=SHOW_FOOD-1;time_flag2=1; //when servo at target, maze_mode changed, pos5 moved so this loop does not repeat, time_flag2 for next cycle
+      maze_mode=2; pos5=SHOW_FOOD-1;time_flag2=1;digitalWrite(pelletPin, LOW); //when servo at target, maze_mode changed, pos5 moved so this loop does not repeat, time_flag2 for next cycle
     }
   if (maze_mode==2){ //maze_mode for waiting for interval or BB2
     duration=millis()-tic;//timer to remove food and brake run-wheel after interval
