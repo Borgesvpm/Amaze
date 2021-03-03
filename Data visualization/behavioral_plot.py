@@ -104,32 +104,30 @@ class Behavioral_plot:
 
         for _ in unique_dates:
             plt.figure()
-            for i, val in enumerate(date_time):
-                try:
-                    t1 = time[i]
-                    t2 = time[i+1]
-                    datetime2 = dt.combine(init_date, t2)
-                    datetime1 = dt.combine(init_date, t1)
-                    time_elapsed = datetime2 - datetime1
-                    seconds = time_elapsed.total_seconds()
-                    if event_type[i] == "Session start":
-                        plt.scatter(date_time[i],seconds,marker="o", c="k")
-                    elif event_type[i] == "BB2":
-                        plt.scatter(date_time[i],seconds,marker=".", c="k")
-                    elif event_type[i] == "Run":
-                        plt.scatter(date_time[i],seconds,marker="D", c="g")
-                    elif event_type[i] == "BB3":
-                        plt.scatter(date_time[i],seconds,marker=".", c="g")
-                    elif event_type[i] == "Food":
-                        plt.scatter(date_time[i],seconds,marker="*", c="b")
-                    elif event_type[i] == "BB4":
-                        plt.scatter(date_time[i],seconds,marker=".", c="b")
-                    elif event_type[i] == "END":
-                        plt.scatter(date_time[i],seconds,marker="_", c="r")
-                    elif event_type[i] == "BB5":
-                        plt.scatter(date_time[i],seconds,marker=".", c="r")
-                except:
-                    continue
+            for i in range(len(date_time)-1):
+                t1 = time[i]
+                t2 = time[i+1]
+                datetime2 = dt.combine(init_date, t2)
+                datetime1 = dt.combine(init_date, t1)
+                time_elapsed = datetime2 - datetime1
+                seconds = time_elapsed.total_seconds()
+
+                if event_type[i+1] == "Session start":
+                    plt.scatter(date_time[i],seconds,marker="o", c="k")
+                elif event_type[i+1] == "BB2":
+                    plt.scatter(date_time[i],seconds,marker=".", c="k")
+                elif event_type[i+1] == "Run":
+                    plt.scatter(date_time[i],seconds,marker="D", c="g")
+                elif event_type[i+1] == "BB3":
+                    plt.scatter(date_time[i],seconds,marker=".", c="g")
+                elif event_type[i+1] == "Food":
+                    plt.scatter(date_time[i],seconds,marker="*", c="b")
+                elif event_type[i+1] == "BB4":
+                    plt.scatter(date_time[i],seconds,marker=".", c="b")
+                elif event_type[i+1] == "END":
+                    plt.scatter(date_time[i],seconds,marker="_", c="r")
+                elif event_type[i+1] == "BB5":
+                    plt.scatter(date_time[i],seconds,marker=".", c="r")
         
 
 
@@ -160,6 +158,45 @@ class Behavioral_plot:
         plt.tight_layout()
 
         plt.show()
+
+    def WeightPlot(self):
+        import pandas as pd
+        import datetime
+        from datetime import datetime as dt, timedelta
+        from matplotlib import pyplot as plt
+        from matplotlib import dates as mpl_dates
+        import matplotlib.lines as mlines
+        
+        df = pd.read_csv("189003_weight.csv")
+        animalsh = str(189003)
+
+        date_time  = pd.to_datetime(df['Date_Time'])
+        weight_mode = df["Weight_Mode"]
+        weight_median = df["Weight_Median"]
+        plt.style.use("seaborn")
+
+        for i, val in enumerate(date_time):
+            if weight_mode[i] == "NO MODE":
+                plt.scatter(date_time[i], float(weight_median[i]),marker="o", c="b")
+            elif float(weight_mode[i]) == 0.0:
+                continue  
+            else:
+                plt.scatter(date_time[i], float(weight_mode[i]),marker="*", c="g")
+                
+
+        plt.gcf().autofmt_xdate()
+
+        date_format = mpl_dates.DateFormatter("%b %d, %H:%M:%S")
+        plt.gca().xaxis.set_major_formatter(date_format)
+
+        plt.title(animalsh)
+        plt.xlabel("Date and Time")
+        plt.ylabel("Time between events (s)")
+
+        plt.tight_layout()
+
+        plt.show()
+
 
 if __name__ == "__main__":
     c = Behavioral_plot()
