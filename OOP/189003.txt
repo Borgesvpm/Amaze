@@ -1,0 +1,29 @@
+File created on 2021-03-01 11:21:51.532263
+Animal number: 189003
+Short hand: NO_WHITE
+RFID tag: none
+
+2021-03-01 11:22:31.171240
+Door 1 was getting stuck sometimes, the animal was able to climb down during the weighing process. 
+
+2021-03-01 11:23:05.728974
+We may need to exclude outlier weights when such events happen
+
+
+2021-03-01 09:23:05.728974
+Mouse can just jump in and out of the homecage - walls need to be larger to prevent 
+escapes, especially in the homecage2021-03-04 14:56:22.609151
+zero weight at 1454 was animal on top of door1. jumped back into bridge after.
+
+2021-03-04 16:08:10.166804
+too easy to climb over door1 from bridge. does it a few more times, always jumping back to bridge however.
+
+2021-03-04 16:10:01.897145
+bridge should be lower profile and doors a few cm taller
+
+2021-03-04 16:31:05.481545
+sleeping in run pod
+
+2021-03-04 17:08:51.830835
+13 pellets consumed
+

@@ -1,0 +1,33 @@
+NO_WHITE 20210223
+Mode is a more accurate measurement for the weight
+Animal seems tentative about climbing down the ladder 
+(stayed on the weighing bridge for over half an hour)
+- Maybe an angled ladder would help the animals move on and off
+
+Animal got stuck on top of the ladder because it was spreading its body downwards (paws remained 
+on top of the door)
+
+Animal seemed scared, removed with homecage
+
+
+LONG_WHITE 20210223
+
+explored well. preference for run pod. speeds up when door3 actuates.
+problems with door1 getting stuck and eventually coming loose from servo. 
+repositioned and reduced friction on joint with cable cover.
+
+24-02-2021
+- The raspberry pi became unresponsive after a reset, needed to come to the VU to manually restart
+- Changed Openscale setting (readings every 120 ms)
+- Changed code (weigh animal for 20 seconds instead of 8)
+
+25-02-2021
+
+- Long white got stuck in the homecage – it apparently jumped over the servo door after activating
+the OpenScale beam break (the animal was at the homecage and MODE was 3)
+-fixed and changed door1 code so it gets itself unstuck when closing.
+
+
+- the maze was restarting as soon as the animal was ending the trial(the door1 would open and close 
+rapidly without enough time for the animal to return to homecage). 
+- made it quite difficult for the animal to be picked up
