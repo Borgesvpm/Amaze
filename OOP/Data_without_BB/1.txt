@@ -1,0 +1,5 @@
+File created on 2021-02-25 18:07:37.644581
+Animal number: 1
+Short hand: d
+RFID tag: d
+

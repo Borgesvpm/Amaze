@@ -1,0 +1,5 @@
+File created on 2021-02-25 16:29:17.860626
+Animal number: 189003
+Short hand: NO_WHITE
+RFID tag: no rfid
+

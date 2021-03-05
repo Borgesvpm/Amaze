@@ -1,0 +1,5 @@
+File created on 2021-03-01 16:03:22.751231
+Animal number: 189005
+Short hand: LONG_WHITE
+RFID tag: 137575399499
+

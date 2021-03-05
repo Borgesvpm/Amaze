@@ -1,0 +1,32 @@
+File created on 2021-03-02 12:01:46.507005
+Animal number: 189004
+Short hand: SHORT_WHITE
+RFID tag: none
+
+2021-03-02 12:02:24.254192
+The food pood got stuck (bent upward) and launched food towards the animal when it got unstuck
+
+2021-03-02 13:23:50.634288
+door2 fell off. so stopped code when animal in home.
+
+2021-03-03 10:01:29.730900
+Door 1 got stuck mid-way through the sessions
+
+2021-03-03 10:04:39.397609
+The animal is able to unstuck door 1 by climbing/pushing on it
+
+2021-03-04 17:13:59.411000
+increased door1 close setting to 145
+
+2021-03-04 17:25:09.244669
+getting pellets ok
+
+2021-03-04 17:54:59.037493
+bb1 fails sometimes
+
+2021-03-04 17:57:27.471773
+recalibrated bb1 by resetting ard while animal was in home cage
+
+2021-03-04 20:38:54.533932
+pellets consumed 28
+
