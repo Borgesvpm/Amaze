@@ -19,10 +19,49 @@ from datetime import datetime
 # change directory to document data folder
 os.chdir("/home/pi/Documents/data/")
 
-def append_weight(weight_data_mean=[], weight_data_median=[], weight_data_mode=[]):
+def RFID_datacheck():
+    global animaltag
+    if animaltag == "137575399499":
+        animaltag = "189005"
+        print("Animal in: LONG_WHITE. ID: 189005")
+        return animaltag
+    
+    elif animaltag == "137575399650":
+        animaltag = "189003"
+        print("Animal in: NO_WHITE. ID: 189003")
+        return animaltag
+    
+    elif animaltag == "137575399490":
+        animaltag = "Test"
+        print("This is a test RFID.")
+        return animaltag
+    elif animaltag == "137575399426":
+        animaltag = "Test2"
+        print("This is a test RFID.")
+        return animaltag
+    else:
+        pass
+
+def RFID_sequential_check():
+    global previous_animal
+    global current_animal
+    global prevent_entry_flag
+    
+    if previous_animal != tag:
+        previous_animal = tag
+        print("Different animal from previous session")
+        return
+    
+    if previous_animal == tag:
+        print("This is the same animal from previous session")
+        print("Entry prevented")
+        prevent_entry_flag = True
+
+def append_weight(weight_data_mean=[], weight_data_median=[], weight_data_mode=[], weight_data_max_mode=[]):
     weight_list.update({'Weight_Mean': [weight_data_mean]})
     weight_list.update({'Weight_Median': [weight_data_median]})
     weight_list.update({'Weight_Mode': [weight_data_mode]})
+    weight_list.update({'Weight_Max_Mode': [weight_data_max_mode]})
     weight_list.update({'Date_Time': [datetime.now()]})
     
     df_w = pd.DataFrame(weight_list)
@@ -52,6 +91,7 @@ weight_list = {
     "Weight_Mean": [],
     "Weight_Median": [],
     "Weight_Mode": [],
+    "Weight_Max_Mode": [],
     "Date_Time": []
 }
 
@@ -60,6 +100,17 @@ event_list = {
     "Type" : [],
     "Date_Time": []
 }
+
+#initialize serial port for RFID
+serRFID = serial.Serial()
+serRFID.port = '/dev/ttyUSB1' #Arduino serial port
+serRFID.baudrate = 9600
+serRFID.timeout = 100000 #specify timeout when using readline()
+serRFID.open()
+if serRFID.is_open==True:
+    print("\nRFID antenna ok. Configuration:\n")
+    print(serRFID, "\n") #print serial parameters
+serRFID.close()
 
 #initialize serial port for OpenScale
 ser = serial.Serial()
@@ -121,12 +172,51 @@ counter=0
 cycle=1200 #cycle on running wheel gives approx this many counts
 run_flag=0
 food_flag=0
-animaltag = input("Which animal is in? ")
+flag_two_animals=False
+previous_animal = []
+current_animal = []
+prevent_entry_flag = False
+
 
 while True:
-    GPIO.output(Pi_RFID,True) # start signal = high
-    MODE = 2   
+    
     while True:
+        if MODE == 1:
+            print("\nMODE 1\n")
+            serRFID.open()
+            serRFID.flush()
+            
+            junk     = serRFID.read(1)
+            tag      = serRFID.read(10)
+            checksum = serRFID.read(2)
+            junk2    = serRFID.read(3)
+            
+            animaltag = str(int(tag, 16)) # transform from hexadecimal to a number
+            print(animaltag)
+            
+            RFID_datacheck()
+            RFID_sequential_check()
+            
+            if prevent_entry_flag:
+                serRFID.close()
+                break
+                
+            if len(tag) > 5:
+                # trigger arduino to open servo1
+                print('Sending Pi_RFID pulse to Arduino')
+                GPIO.output(Pi_RFID,True) # start signal = high
+                # getting date and time of trial start
+                date_and_time = time.strftime("%Y%m%d-%H%M%S")
+                date_var = time.strftime("%Y%m%d")
+                time_var = time.strftime("%H%M%S")
+
+                #Append data
+                append_event("+", "START")
+                
+                # switch mode and clean up RFID
+                MODE = 2
+                serRFID.close()
+            print("\nMODE 2\n")
         if MODE == 2 and GPIO.input(ard_pi_1): 
             print("\nMODE 2\n")
             append_event("+", "Session start")
@@ -137,6 +227,7 @@ while True:
             for x in range(8): # chuck two lines 
                 line=ser.readline()
                 print(line)
+                
             for x in range(100): # 100 lines*120ms per line=12s of data 
                 line=ser.readline()
                 print(line)
@@ -146,24 +237,22 @@ while True:
                 relProb_float = float(relProb_as_list[0])
                 relProb_float = relProb_float*1000
                 
-                # if relProb_float > 30:
-                # GPIO.output(Pi_RFID,False)
-                # MODE = 3
-#                 if MODE == 3 and GPIO.input(ard_pi_3): #animal going back home
+#                 if relProb_float > 30:
 #                     print("\nMODE 4\n")
-#                     append_event("*", "BB5")
-#                     GPIO.output(Pi_RFID,False)
+#                     GPIO.output(Pi_RFID,True)
 #                     #stop camera capture/opto
 #                     GPIO.output(Pi_capture_1,False)
-#                     time.sleep(15)#so the RFID doesn't read while animal is going back to cage
-#                     print("second sleep")
 #                     MODE = 1
 # 
 #                     #appending data to database
 #                     append_event("x", "TWO ANIMALS")
 #                     
-#                     #BREAK OUT OF THE INFINITE LOOP 
-#                     break
+#                     flag_two_animals = True
+#                     break # from weighing loop
+#                 
+#             if flag_two_animals:
+#                 break # from the entire session
+        
                 ys.append(relProb_float)
             ser.close()
             
@@ -185,6 +274,13 @@ while True:
                 weight_data_mode = stats.mode(ys)
             except:
                 weight_data_mode = "NO MODE"
+                
+            # mode max TO DO
+            try:
+                weight_data_max_mode = stats.multimode(ys)
+                weight_data_max_mode = weight_data_max_mode[-1] # largest of modes
+            except:
+                weight_data_max_mode = "NO MAX_MODE"
 
             #appending data to database
             append_weight(weight_data_mean, weight_data_median, weight_data_mode)
@@ -267,6 +363,8 @@ while True:
                 print(counter)    
                 limit=counter+cycle                 
 
+    prevent_entry_flag = False
     print("finally")
+
 
 
