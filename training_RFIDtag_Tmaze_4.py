@@ -187,46 +187,48 @@ while True:
     GPIO.output(Pi_exit,False)
     GPIO.output(Pi_end,False)
     GPIO.output(Pi_capture_1,False)
+
     while True:
         if MODE == 1:
             print("\nMODE 1\n")
+            serRFID.open()
+            serRFID.flush()
+
+            junk     = serRFID.read(1)
+            tag      = serRFID.read(10)
+            checksum = serRFID.read(2)
+            junk2    = serRFID.read(3)
+
+            animaltag = str(int(tag, 16)) # transform from hexadecimal to a number
+            print(animaltag)
+            
             try:
-                serRFID.open()
-                serRFID.flush()
-                
-                junk     = serRFID.read(1)
-                tag      = serRFID.read(10)
-                checksum = serRFID.read(2)
-                junk2    = serRFID.read(3)
-                
-                animaltag = str(int(tag, 16)) # transform from hexadecimal to a number
-                print(animaltag)
-                
                 RFID_datacheck()
                 RFID_sequential_check()
-            
-                if prevent_entry_flag:
-                    serRFID.close()
-                    break
-                
-                if len(tag) > 5:
-                    # trigger arduino to open servo1
-                    print('Sending Pi_RFID pulse to Arduino')
-                    GPIO.output(Pi_RFID,True) # start signal = high
-                    # getting date and time of trial start
-                    date_and_time = time.strftime("%Y%m%d-%H%M%S")
-                    date_var = time.strftime("%Y%m%d")
-                    time_var = time.strftime("%H%M%S")
-
-                    #Append data
-                    append_event("+", "START")
-                    
-                    # switch mode and clean up RFID
-                    MODE = 2
-                    print("\nMODE 2\n")
-                    serRFID.close()
             except:
-                continue
+                tag = 0
+
+            if prevent_entry_flag:
+                serRFID.close()
+                break
+
+            if len(tag) > 5:
+                # trigger arduino to open servo1
+                print('Sending Pi_RFID pulse to Arduino')
+                GPIO.output(Pi_RFID,True) # start signal = high
+                # getting date and time of trial start
+                date_and_time = time.strftime("%Y%m%d-%H%M%S")
+                date_var = time.strftime("%Y%m%d")
+                time_var = time.strftime("%H%M%S")
+
+                #Append data
+                append_event("+", "START")
+
+                # switch mode and clean up RFID
+                MODE = 2
+                serRFID.close()
+            print("\nMODE 2\n")
+
             
         if MODE == 2 and GPIO.input(ard_pi_1): 
             print("\nMODE 2\n")
