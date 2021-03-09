@@ -45,6 +45,7 @@ const int FOOD_SPEED = 20;//delay for moving 1deg; higher is slower
 
 const int pi_ard_1 = 12;//receive RFID command from Pi 
 const int pi_ard_2 = 13;//receive weight decision from Pi
+const int pi_ard_3 = 1;//receive weight decision from Pi (when animal is done)
 
 //Variables
 int photo_value1;//Store value from photoresistor (0-1023)
@@ -59,6 +60,7 @@ int photo_value5;//Store value from photoresistor (0-1023)
 int INIT_READ5;
 int START=LOW;//initialize start signal
 int STOP=LOW;//initialize heavy scale stop signal
+int END=LOW;
 int MODE=1;//initialize MODE
 
 int pos = 0; //generic servo pos variable for use in blocking for-loops for semi-slow motion (keep to less than 500ms total and ensure no arduino detector events can happen during this)
@@ -75,7 +77,7 @@ int time_flag3=0;
 
 void setup()
 {
-  Serial.begin(9600);//setup serial
+  //Serial.begin(9600);//setup serial
   pinMode(pResistor1, INPUT);//Set pResistor - A0 pin as an input 
   pinMode(pResistor2, INPUT);
   pinMode(pResistor3, INPUT);
@@ -88,6 +90,7 @@ void setup()
   pinMode(ard_pi_5, OUTPUT); 
   pinMode(pi_ard_1, INPUT);//input commands from Pi
   pinMode(pi_ard_2, INPUT);
+  pinMode(pi_ard_3, INPUT);
   pinMode(pelletPin, OUTPUT); 
 
   servo1.attach(servoPin1);
@@ -193,6 +196,8 @@ void loop()
 
   START=digitalRead(pi_ard_1);//RFID INPUT from Pi
   STOP=digitalRead(pi_ard_2);//stop signal from Pi
+  END=digitalRead(pi_ard_3);//stop signal from Pi
+  
   if (MODE==1)//home cage
   { 
     if (START==1)
@@ -393,18 +398,22 @@ void loop()
 
   if (MODE==4)//going back to cage
   { 
+    delay(100);
     servo1.write(OPEN_DOOR1);
-    if (STOP==0)//Pi says scale is empty so we can close maze
+    delay(100);
+    digitalWrite(ard_pi_3, HIGH);//tell Pi to start weighing.
+    delay(100);
+    digitalWrite(ard_pi_3, LOW);//end pulse to Pi.
+    if (END==1)//Pi says scale is empty so we can close maze
     { 
       servo1.write(CLOSE_DOOR1); //trap animal in home cage
+      delay(100);
+      servo2.write(CLOSE_DOOR2); 
       delay(100);
       servo1.write(HELP_DOOR1); //unstick door1
       delay(100);
       servo1.write(CLOSE_DOOR1);//close
       delay(100);
-      digitalWrite(ard_pi_3, HIGH);//tell Pi to sync to MODE 1.
-      delay(100);
-      digitalWrite(ard_pi_3, LOW);//end pulse to Pi.
       MODE=1;
     }
   }
