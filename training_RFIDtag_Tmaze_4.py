@@ -149,15 +149,18 @@ clkLastState=GPIO.input(clk)
 
 # set pin outputs to arduino
 Pi_RFID = 16
-Pi_scale = 15
+Pi_exit = 15
+Pi_end = 13
 Pi_capture_1=40
 PiArd_reset=18
 GPIO.setup(Pi_RFID,GPIO.OUT)
-GPIO.setup(Pi_scale,GPIO.OUT)
+GPIO.setup(Pi_exit,GPIO.OUT)
+GPIO.setup(Pi_end,GPIO.OUT)
 GPIO.setup(Pi_capture_1,GPIO.OUT)
 GPIO.setup(PiArd_reset,GPIO.OUT)
 GPIO.output(Pi_RFID,False)
-GPIO.output(Pi_scale,False)
+GPIO.output(Pi_exit,False)
+GPIO.output(Pi_end,False)
 GPIO.output(Pi_capture_1,False)
 GPIO.output(PiArd_reset,False)
 time.sleep(0.3)
@@ -176,31 +179,39 @@ flag_two_animals=False
 previous_animal = []
 current_animal = []
 prevent_entry_flag = False
+flag_animals_left = False
 
 
 while True:
-    
+    GPIO.output(Pi_RFID,False)
+    GPIO.output(Pi_exit,False)
+    GPIO.output(Pi_end,False)
+    GPIO.output(Pi_capture_1,False)
+
     while True:
         if MODE == 1:
             print("\nMODE 1\n")
             serRFID.open()
             serRFID.flush()
-            
+
             junk     = serRFID.read(1)
             tag      = serRFID.read(10)
             checksum = serRFID.read(2)
             junk2    = serRFID.read(3)
-            
+
             animaltag = str(int(tag, 16)) # transform from hexadecimal to a number
             print(animaltag)
             
-            RFID_datacheck()
-            RFID_sequential_check()
-            
+            try:
+                RFID_datacheck()
+                RFID_sequential_check()
+            except:
+                tag = 0
+
             if prevent_entry_flag:
                 serRFID.close()
                 break
-                
+
             if len(tag) > 5:
                 # trigger arduino to open servo1
                 print('Sending Pi_RFID pulse to Arduino')
@@ -212,16 +223,20 @@ while True:
 
                 #Append data
                 append_event("+", "START")
-                
+
                 # switch mode and clean up RFID
                 MODE = 2
                 serRFID.close()
             print("\nMODE 2\n")
+
+            
         if MODE == 2 and GPIO.input(ard_pi_1): 
             print("\nMODE 2\n")
+            
             append_event("+", "Session start")
             GPIO.output(Pi_RFID,False)
             ys = [] #store weights here
+            data_zeros = [] #store weights here
             ser.open()
             ser.flush()
             for x in range(8): # chuck two lines 
@@ -237,59 +252,93 @@ while True:
                 relProb_float = float(relProb_as_list[0])
                 relProb_float = relProb_float*1000
                 
-#                 if relProb_float > 30:
-#                     print("\nMODE 4\n")
-#                     GPIO.output(Pi_RFID,True)
-#                     #stop camera capture/opto
-#                     GPIO.output(Pi_capture_1,False)
-#                     MODE = 1
-# 
-#                     #appending data to database
-#                     append_event("x", "TWO ANIMALS")
-#                     
-#                     flag_two_animals = True
-#                     break # from weighing loop
-#                 
-#             if flag_two_animals:
-#                 break # from the entire session
-        
-                ys.append(relProb_float)
-            ser.close()
-            
-            for i in range(len(ys)):
-                ys[i] = round(ys[i],3)
-            
-            #weight_data_mean = round(weight_data_mean,2) # two digits of precision
-            #weight_data_median = round(weight_data_median,2) # two digits of precision
-            #weight_data_mode = round(weight_data_mode,2) # two digits of precision
-            
-            GPIO.output(Pi_RFID,True) # start signal = high
-            
-            # mean 
-            weight_data_mean = stats.mean(ys)
-            # median
-            weight_data_median = stats.median(ys)
-            # mode
-            try:
-                weight_data_mode = stats.mode(ys)
-            except:
-                weight_data_mode = "NO MODE"
+                # If there are two animals on bridge:
+                if relProb_float > 34:
+                    ser.close()
+                    
+                    print("TWO ANIMALS ON BRIDGE")
+                    
+                    flag_two_animals = True
+                    
+                    GPIO.output(Pi_exit,True)
+
+                    break # from weighing loop
+                else:
+                    ys.append(relProb_float)
                 
-            # mode max TO DO
-            try:
-                weight_data_max_mode = stats.multimode(ys)
-                weight_data_max_mode = weight_data_max_mode[-1] # largest of modes
-            except:
-                weight_data_max_mode = "NO MAX_MODE"
+            if flag_two_animals:
+                flag_two_animals = False
+                GPIO.output(Pi_RFID,False)
+                
+                ser.open()
+                ser.flush()
+                for x in range(8): # chuck two lines 
+                    line=ser.readline()
+                    print(line)
+                for x in range(100000):
+                    
+                    line=ser.readline()
+                    print(line)
+                    line_as_list = line.split(b',')
+                    relProb = line_as_list[0]
+                    relProb_as_list = relProb.split(b'\n')
+                    relProb_float = float(relProb_as_list[0])
+                    relProb_float = relProb_float*1000
+                    
+                    if relProb_float < 1:
+                        data_zeros.append(relProb_float)
+                        print(data_zeros)
+                        
+                    if len(data_zeros) > 30:    
+                        ser.close()
+                        print("All animals left the bridge")
+                        
+                        flag_animals_left = True
+                        break # from the entire session
+        
+            if flag_animals_left:
+                flag_animals_left = False
+                GPIO.output(Pi_end,True)
+                time.sleep(10)
+                MODE = 1
+                break
+            
+            if not flag_animals_left:
+                for i in range(len(ys)):
+                    ys[i] = round(ys[i],3)
+                
+                #weight_data_mean = round(weight_data_mean,2) # two digits of precision
+                #weight_data_median = round(weight_data_median,2) # two digits of precision
+                #weight_data_mode = round(weight_data_mode,2) # two digits of precision
+                
+                GPIO.output(Pi_RFID,True) # start signal = high
+                
+                # mean 
+                weight_data_mean = stats.mean(ys)
+                # median
+                weight_data_median = stats.median(ys)
+                # mode
+                try:
+                    weight_data_mode = stats.mode(ys)
+                except:
+                    weight_data_mode = "NO MODE"
+                    
+                # mode max TO DO
+                try:
+                    weight_data_max_mode = stats.multimode(ys)
+                    weight_data_max_mode = weight_data_max_mode[-1] # largest of modes
+                except:
+                    weight_data_max_mode = "NO MAX_MODE"
 
-            #appending data to database
-            append_weight(weight_data_mean, weight_data_median, weight_data_mode)
+                #appending data to database
+                append_weight(weight_data_mean, weight_data_median, weight_data_mode)
 
-            # change mode and clean up
-            del ys 
-            MODE = 3
-            flag=1
-            print("\nMODE 3\n")
+                # change mode and clean up
+                ser.close()
+                del ys 
+                MODE = 3
+                flag=1
+                print("\nMODE 3\n")
                         
         if MODE == 3 and GPIO.input(ard_pi_2) and flag==1: #log a trial start
             #append run wheel here
@@ -315,21 +364,46 @@ while True:
             food_flag=0
             counter=0
             
-        if MODE == 3 and GPIO.input(ard_pi_3): #animal going back home
-            print("\nMODE 4\n")
-            append_event("*", "BB5")
-            GPIO.output(Pi_RFID,False)
-            #stop camera capture/opto
-            GPIO.output(Pi_capture_1,False)
-            time.sleep(15)#so the RFID doesn't read while animal is going back to cage
-            print("second sleep")
-            MODE = 1
-
-            #appending data to database
-            append_event("-", "END")
             
-            #BREAK OUT OF THE INFINITE LOOP 
-            break
+        if MODE == 3 and GPIO.input(ard_pi_3): #animal going back home
+            ser.open()
+            ser.flush()
+            data_zeros=[]
+            for x in range(8): # chuck two lines 
+                line=ser.readline()
+                print(line)
+            for x in range(100000):
+                line=ser.readline()
+                print(line)
+                line_as_list = line.split(b',')
+                relProb = line_as_list[0]
+                relProb_as_list = relProb.split(b'\n')
+                relProb_float = float(relProb_as_list[0])
+                relProb_float = relProb_float*1000
+                
+                if relProb_float < 1:
+                    data_zeros.append(relProb_float)
+                else:
+                    data_zeros = []
+                        
+                if len(data_zeros) > 30:    
+                    ser.close()
+                    print("All animals left the bridge")
+                    flag_animals_left = True
+                    break # from the entire session
+    
+            if flag_animals_left:
+                flag_animals_left = False
+                time.sleep(1)
+                GPIO.output(Pi_RFID,False)
+                time.sleep(1)
+                GPIO.output(Pi_end,True)
+                GPIO.output(Pi_capture_1,False)
+                #appending data to database
+                append_event("-", "END")
+                time.sleep(5)
+                MODE = 1
+                break
                     
         if MODE == 3 and GPIO.input(ard_pi_4) and flag==0: #log food pod
             append_event("*", "BB4")
