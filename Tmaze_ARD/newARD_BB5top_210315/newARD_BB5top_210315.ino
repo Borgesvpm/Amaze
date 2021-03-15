@@ -30,17 +30,17 @@ const int ard_pi_3 = 10;//reports
 const int ard_pi_4 = 11;//reports food pod entry to Pi
 const int ard_pi_5 = 2;// reports running wheel pod entry to Pi
 
-const int CLOSE_DOOR1 = 150;//Angle of 135 degrees -> door is closed
-const int OPEN_DOOR1 = 47;//Angle of 20 degrees -> door is opened
+const int CLOSE_DOOR1 = 150;//Angle of 150 degrees -> door is closed
+const int OPEN_DOOR1 = 47;//Angle of 47 degrees -> door is opened
 const int HELP_DOOR1 = 60;//help on close so it does not get stuck
-const int CLOSE_DOOR2 = 155;//155;//Angle of 155 degrees -> door is closed
-const int OPEN_DOOR2 = 40;// 20
-const int CLOSE_DOOR3 = 159;//Angle of 157 degrees -> middle passage is closed
-const int OPEN_DOOR3 = 87;// 89
+const int CLOSE_DOOR2 = 155;//Angle of 155 degrees -> door is closed
+const int OPEN_DOOR2 = 40;// 40
+const int CLOSE_DOOR3 = 159;//Angle of 159 degrees -> middle passage is closed
+const int OPEN_DOOR3 = 87;// 87
 const int RELEASE_WHEEL = 100;//Angle of 100 degrees -> WHEEL is free
 const int BRAKE_WHEEL = 20;//20 CLAMPED
-const int SHOW_FOOD = 140;//Angle of 120 degrees -> FOOD IN CENTER
-const int HIDE_FOOD = 123;//175 HIDDEN
+const int SHOW_FOOD = 140;//Angle of 170 degrees -> FOOD IN CENTER
+const int HIDE_FOOD = 123;//123 HIDDEN
 const int FOOD_SPEED = 20;//delay for moving 1deg; higher is slower
 
 const int pi_ard_1 = 12;//receive RFID command from Pi 
@@ -401,26 +401,26 @@ void loop()
       servo1.write(OPEN_DOOR1);
       delay(100);
       digitalWrite(ard_pi_3, HIGH);//tell Pi to start weighing.
-      delay(100);
-      digitalWrite(ard_pi_3, LOW);//end pulse to Pi.
       MODE=5;
   }
       
   if (MODE==5)//confirm move to cage
-    if (END==1)//Pi says scale is empty so we can close maze if BB5 is not blocked
+    END=digitalRead(pi_ard_3);//stop signal from Pi
+    if (END==1)//Pi says scale is empty -> close maze if BB5 is not blocked
     {
       photo_value5 = analogRead(pResistor5); //read BB5
       if (photo_value5 > 0.9*INIT_READ5) //reversed condition for open BB5!
       {
+        digitalWrite(ard_pi_3, LOW);//tell Pi to stop weighing.
         servo1.write(CLOSE_DOOR1); //trap animal in home cage
         delay(100);
         servo1.write(HELP_DOOR1); //unstick door1
         delay(100);
         servo1.write(CLOSE_DOOR1);//close
         delay(100);
-        digitalWrite(ard_pi_1, HIGH);//tell Pi to sync MODE 1.
-        delay(100);
-        digitalWrite(ard_pi_1, LOW);//end pulse to Pi.
+//        digitalWrite(ard_pi_1, HIGH);//tell Pi to sync MODE 1.
+//        delay(100);
+//        digitalWrite(ard_pi_1, LOW);//end pulse to Pi.
         MODE=1;
       }
     }  
