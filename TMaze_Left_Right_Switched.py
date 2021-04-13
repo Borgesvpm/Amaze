@@ -18,6 +18,11 @@ from datetime import datetime
 # change directory to document data folder
 os.chdir("/home/pi/Documents/data/")
 
+def side(wheel="Left", FED="Right"):
+    return [wheel, FED]
+
+wheel_position, FED_position = side()
+
 def RFID_readtag(RFIDnum):
     """
     This function reads the RFID tag, removes the junk incoming and returns the
@@ -314,7 +319,8 @@ class SaveData:
         else:
             df_w.to_csv(animaltag + "_weight.csv", mode="a+", header=False, encoding="utf-8-sig", index=False)
         
-    def append_event(self,cycles_str,event_type,animaltag):
+
+    def append_event(self,cycles_str,event_type,animaltag,wheel_position,FED_position):
         """
         Function used to save event parameters to a .csv file
         """
@@ -322,14 +328,18 @@ class SaveData:
 
         event_list = {
             "Rotation": [],
-            "Type" : [],    
+            "Type" : [],
+            "Wheel_Position": [],
+            "FED_Position": [],    
             "Date_Time": []
         }
         
         event_list.update({'Rotation': [cycles_str]})
         event_list.update({'Type': [event_type]})
         event_list.update({'Date_Time': [datetime.now()]})
-        
+        event_list.update({'Wheel_Position': [wheel_position]})
+        event_list.update({'FED_Position': [FED_position]})
+
         df_e = pd.DataFrame(event_list)
         print(df_e)
 
@@ -403,8 +413,15 @@ ser.close()
 ard_pi_1 = 35
 ard_pi_2 = 36
 ard_pi_3 = 37
-ard_pi_4 = 38
-ard_pi_5 = 33
+
+if wheel_position == "Left":
+    ard_pi_4 = 38
+    ard_pi_5 = 33
+
+elif wheel_position == "Right":
+    ard_pi_4 = 33
+    ard_pi_5 = 38
+
 GPIO.setup(ard_pi_1,GPIO.IN)
 GPIO.setup(ard_pi_2,GPIO.IN)
 GPIO.setup(ard_pi_3,GPIO.IN)
