@@ -40,7 +40,7 @@ class Behavioral_plot:
                 for counter, val in enumerate(date):
                     date_string = u_date.strftime('%Y%m%d')
                     if date[counter] == u_date:
-                        if df["Type"][counter] == "Session start":
+                        if df["Type"][counter] == "Session start" or df["Type"][counter] == "START":
                             plt.scatter(date_time[counter],0,marker="|", c="r", s= 10**7, alpha = 0.1)
                         elif df["Type"][counter] == "END":
                             plt.scatter(date_time[counter],0,marker="|", c="k", s= 10**7, alpha = 0.1)
@@ -116,7 +116,7 @@ class Behavioral_plot:
                 time_elapsed = datetime2 - datetime1
                 seconds = time_elapsed.total_seconds()
 
-                if event_type[i+1] == "Session start":
+                if event_type[i+1] == "Session start" or event_type[i+1] == "START":
                     plt.scatter(date_time[i],seconds,marker="o", c="k")
                 elif event_type[i+1] == "BB2":
                     plt.scatter(date_time[i],seconds,marker=".", c="k")
@@ -213,7 +213,7 @@ class Behavioral_plot:
                         if i == 1:
                             plt.scatter(date_time[i],0,marker="|", c="r", s= 10**7, alpha = 0.1)
 
-                        if event_type[i+1] == "Session start":
+                        if event_type[i+1] == "Session start" or event_type[i+1] == "START":
                             plt.scatter(date_time[i],0,marker="|", c="r", s= 10**7, alpha = 0.1)
                         elif event_type[i+1] == "BB2":
                             plt.scatter(date_time[i],seconds,marker=".", c="r")
@@ -322,6 +322,6 @@ class Behavioral_plot:
 
 if __name__ == "__main__":
     c = Behavioral_plot([189003, 189004, 189005])
-    #c.RotationPlot()
-    #c.TimeDiff_SS()
+    c.RotationPlot()
+    c.TimeDiff_SS()
     c.WeightPlot()
