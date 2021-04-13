@@ -18,7 +18,11 @@ from datetime import datetime
 # change directory to document data folder
 os.chdir("/home/pi/Documents/data/")
 
-def side(wheel="Left", FED="Right"):
+def side(wheel="Left"):
+    if wheel == "Left":
+        FED="Right"
+    elif wheel == "Right":
+        FED="Left"
     return [wheel, FED]
 
 wheel_position, FED_position = side()
