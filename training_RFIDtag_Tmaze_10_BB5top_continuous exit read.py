@@ -142,41 +142,7 @@ def RFID_sequential_check(animaltag, trial_type="Test"):
         print("Entry prevented")
         entry_flag = False
         return entry_flag
-
-def RFID_sequential_check2():
-    """
-    For multiple animals with RFID tags, this function ensures that the animals do the
-    task in the appropriate order, defined by the experimenter.
-    
-    This prevents the same animal from doing the task multiple times in a row.
-
-    The sequence index is only updated at the end of a valid task (i.e. when the
-    correct animal went in and out of the maze.
-    """
-    
-    global sequence_index
-    global sequence_list
-    
-    sequence_list = ["2006010085", "137575399426", "202100030"]
-    #sequence_list_three = [137575399499, 137575399602, 137575399650]
-    #sequence_list = ["137575399426", "137575399426", "137575399426"] #test tag3
-    #sequence_list = ["137575399602", "137575399602", "137575399602"] #short_white only
-    #sequence_list = ["137575399499", "137575399602", "137575399650"] #all3
-    #sequence_list = ["137575399499", "137575399602"] #no_white excluded
-    #sequence_list = ["137575399499", "137575399650"] #short_white excluded
-    
-    if sequence_list[sequence_index] == clean_tag:
-        print("Animal matches sequence")
-        print("Entry allowed")
-        entry_flag = True
-        return entry_flag
-    
-    if sequence_list[sequence_index] != clean_tag:
-        print("Animal does not match sequence")
-        print("Next animal in line is " + sequence_list[sequence_index])
-        print("Entry prevented")
-        entry_flag = False
-        return entry_flag
+        
     
 def check_bridge():
     """
