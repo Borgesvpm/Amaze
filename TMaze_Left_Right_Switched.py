@@ -18,14 +18,18 @@ from datetime import datetime
 # change directory to document data folder
 os.chdir("/home/pi/Documents/data/")
 
-def side(wheel="Left"):
+def wheel_side(wheel):
     if wheel == "Left":
-        FED="Right"
+        FED = "Right"
     elif wheel == "Right":
-        FED="Left"
+        FED = "Left"
     return [wheel, FED]
 
-wheel_position, FED_position = side()
+wheel_position, FED_position = wheel_side("Right")
+
+#Choose "Animal" or "Test" below
+#trial_type = "Animal"
+trial_type = "Test"
 
 def RFID_readtag(RFIDnum):
     """
@@ -116,7 +120,7 @@ def RFID_datacheck(clean_tag):
     else:
         pass
     
-def RFID_sequential_check(animaltag, trial_type="Test"):
+def RFID_sequential_check(animaltag, tt = trial_type):
     """
     For multiple animals with RFID tags, this function ensures that the animals do the
     task in the appropriate order, defined by the experimenter.
@@ -132,10 +136,10 @@ def RFID_sequential_check(animaltag, trial_type="Test"):
 
     print(trial_type)
 
-    if trial_type == "Test":
+    if tt == "Test":
         sequence_list = ["Stick_X", "Stick_Y", "Stick_Z"]
-    if trial_type == "Animal":  
-        sequence_list = ["189003", "189004", "189005"]
+    if tt == "Animal":  
+        sequence_list = ["189005", "189004"] #out of study , "189003"
     
     if sequence_list[sequence_index] == animaltag:
         print(animaltag)
@@ -223,7 +227,7 @@ def exit_mode():
         if not GPIO.input(ard_pi_3):
             return True
         
-def acquire_weight():
+def acquire_weight(animaltag):
     """
     This function is used to acquire 100 datapoints of the animals weight and returns
     a few different parameters - mean, median, mode, max_mode(the latter does not
@@ -283,17 +287,12 @@ def acquire_weight():
         except:
             weight_data_max_mode = "NO MAX_MODE"
             
+        #appending data to database
+        save = SaveData()
+        save.append_weight(weight_data_mean, weight_data_median,
+        weight_data_mode, weight_data_max_mode,animaltag)
         return flag_two_animals
 
-    
-    #appending data to database
-    save.append_weight(weight_data_mean, weight_data_median,
-                  weight_data_mode, weight_data_max_mode,
-                  animaltag)
-    print("\nMODE 3\n")
-    
-    # change mode and clean up
-    del ys
 
 class SaveData:
     def append_weight(self,weight_data_mean, weight_data_median,
@@ -320,25 +319,30 @@ class SaveData:
 
         if not os.path.isfile(animaltag + "_weight.csv"):
             df_w.to_csv(animaltag + "_weight.csv", encoding="utf-8-sig", index=False)
+            print("File created sucessfully")
         else:
             df_w.to_csv(animaltag + "_weight.csv", mode="a+", header=False, encoding="utf-8-sig", index=False)
+            print("File appended sucessfully")
         
 
-    def append_event(self,cycles_str,event_type,animaltag,wheel_position,FED_position):
+    def append_event(self,rotation,food_time,event_type,animaltag,
+                     wheel_position,FED_position):
         """
         Function used to save event parameters to a .csv file
         """
         global event_list
 
         event_list = {
+            "Date_Time": [],
             "Rotation": [],
+            "Pellet_Retrieval": [],
             "Type" : [],
             "Wheel_Position": [],
-            "FED_Position": [],    
-            "Date_Time": []
+            "FED_Position": []    
         }
         
-        event_list.update({'Rotation': [cycles_str]})
+        event_list.update({'Rotation': [rotation]})
+        event_list.update({'Pellet_Retrieval': [food_time]})
         event_list.update({'Type': [event_type]})
         event_list.update({'Date_Time': [datetime.now()]})
         event_list.update({'Wheel_Position': [wheel_position]})
@@ -519,14 +523,14 @@ while True:
                         
                 elif same_animal:
                     #Append data
-                    save.append_event("+", "START", animaltag)
+                    save.append_event("+", "", "START", animaltag, wheel_position, FED_position)
                     MODE = 3
                     choice_flag=False
                     break
     
         if MODE == 3:
             # Starting weighing the animal once its identity is confirmed
-            two_animals = acquire_weight()
+            two_animals = acquire_weight(animaltag)
             if two_animals:
                 MODE = 0
             
@@ -540,19 +544,19 @@ while True:
             #append run wheel here
             print("\ntrial start\n")
 
-            # only append BB2 for the first time the animal enters the maze
+            # only append BB2 for the first time the animal entersf the maze
             if event_list["Type"] == ["START"]:
-                save.append_event("*", "BB2", animaltag)
+                save.append_event("*", "", "BB2", animaltag, wheel_position, FED_position)
             
             if food_flag:
                 print("appending food pod data")
                 cycles_str = round(counter/cycle,4)
-                save.append_event(cycles_str, "Food_log", animaltag)
+                save.append_event(cycles_str, "", "Food_log", animaltag, wheel_position, FED_position)
             
             if run_flag:
                 print("appending running wheel data")
                 cycles_str = round(counter/cycle,4)
-                save.append_event(cycles_str, "Run_log", animaltag)
+                save.append_event(cycles_str, "", "Run_log", animaltag, wheel_position, FED_position)
             #start camera capture/opto
             GPIO.output(Pi_capture_1,True)
             choice_flag=True
@@ -563,7 +567,7 @@ while True:
             
             
         if MODE == 4 and GPIO.input(ard_pi_3): #animal going back home
-            save.append_event("-", "END", animaltag)
+            save.append_event("-", "", "END", animaltag, wheel_position, FED_position)
             task_complete_flag = True
             MODE = 0
             
@@ -579,11 +583,11 @@ while True:
                 
                 if task_complete_flag:
                     sequence_index = (sequence_index + 1) % len(sequence_list) # works for two animals
-                
+                    task_complete_flag = False
                 break
                         
         if MODE == 4 and GPIO.input(ard_pi_4) and choice_flag: #log food pod
-            save.append_event("*", "BB4", animaltag)
+            save.append_event("*", "", "BB4", animaltag, wheel_position, FED_position)
             food_clk_start = time.process_time()
             # arduino sends pulse to FED
             print("\nfood pod\n")
@@ -594,7 +598,7 @@ while True:
 
         if MODE == 4 and GPIO.input(ard_pi_5) and choice_flag: #log a maze event running wheel
             print("\nrunning wheel\n")
-            save.append_event("*", "BB3", animaltag)
+            save.append_event("*", "", "BB3", animaltag, wheel_position, FED_position)
             
             choice_flag=False
             run_flag=True
@@ -611,7 +615,8 @@ while True:
 
         if GPIO.input(Food_pod_retrieval):
             food_clk_end = round(time.process_time() - food_clk_start, 4)
-            save.append_event(food_clk_end, "Food_retrieval", animaltag)
+            print("Appending food retrieval") 
+            save.append_event("", food_clk_end, "Food_retrieval", animaltag, wheel_position, FED_position)
             time.sleep(1) #Necessary because otherwise appends 10 data points ms apart
 
     # reset variables
@@ -620,9 +625,3 @@ while True:
     flag_two_animals=False
     
     print("finally")
-
-
-
-
-
-
