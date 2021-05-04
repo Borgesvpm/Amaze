@@ -494,27 +494,34 @@ class Behavioral_plot:
             for i, val in enumerate(event_type):
                 if wheel_position[i] != previous_position:
                     previous_position = wheel_position[i]
+
                     switch_index_list.append(i+2)
+                    print(i+2)
+
+                    #if date[i-1] == date[i]: # does not append if switch happened between days
+                    #    switch_index_list.append(i+2)
+                    #    print(i+2)
+
+            print(' ')
             return switch_index_list
 
+        def DetectSessionPreviousToSwitch(detect_switch_list):
+            i = 3
+            previous_index_list = []
 
-        def DetectFirstBlockOfEachDay():
-            first_block = []
+            for val in detect_switch_list:
+                while True:
+                    if event_type[val - i] == "START":
+                        print(val-i+2)
+                        print("hi")
+                        previous_index_list.append(val-i+2)
+                        break
+                    i += 1
+            
+            return previous_index_list
+            
 
-            date = pd.to_datetime(df['Date_Time']).dt.date
-            unique_dates = pd.unique(date)
-            ind_dates = 0
-
-            for i,val in enumerate(date):
-                try:
-                    if val == unique_dates[ind_dates]:
-                        print(i +2)
-                        first_block.append(i+2)
-                        ind_dates += 1
-                except:
-                    return first_block
-
-        def DetectSessionPreviousToSwitch():
+        def DetectSessionPreviousToSwitch_old():
             previous_position = wheel_position[0]
             list_event_type_val = []
             list_event_type_ind = [] 
@@ -527,9 +534,9 @@ class Behavioral_plot:
                         previous_position = wheel_position[i]
                         tmp_val = list_event_type_ind[i] + 2
                         list_event_type_val.append(tmp_val)
+                        print(tmp_val)
                 except:
                     pass
-            print(list_event_type_val)
             return list_event_type_val
 
         def ThreeChoicesBeforeSwitch(list_before_switch):
@@ -537,24 +544,44 @@ class Behavioral_plot:
             num_run = 0
 
             for elem in list_before_switch:
+                #print(elem)
                 if elem == "BB3":
                     num_run += 1
                 if elem == "BB4":
                     num_food += 1
-            print(num_run, num_food)
-            return [num_run, num_food]
+                if num_run + num_food >= 3:
+                    break
+                if elem == "END":
+                    break
+
+            if num_run + num_food >= 3:
+                print("done\n")
+                return [num_run, num_food]
+            else:
+                print("did not reach three choices")
+                return [float('NaN'), float('NaN')]
 
         def ThreeChoicesAfterSwitch(list_after_switch):
             num_food = 0
             num_run = 0
 
             for elem in list_after_switch:
+                #print(elem)
                 if elem == "BB3":
                     num_run += 1
                 if elem == "BB4":
                     num_food += 1
-            print(num_run, num_food)
-            return [num_run, num_food]
+                if num_run + num_food >= 3:
+                    break
+                if elem == "END":
+                    break
+
+            if num_run + num_food >= 3:
+                print("done\n")
+                return [num_run, num_food]
+            else:
+                print("did not reach three choices")
+                return [float('NaN'), float('NaN')]
 
         def EventType(index, number_of_elements):
             event_list = []
@@ -578,62 +605,253 @@ class Behavioral_plot:
 
             
             switch_index_list = DetectSwitch()
-            non_switch_index_list = DetectSessionPreviousToSwitch()
+            non_switch_index_list = DetectSessionPreviousToSwitch(switch_index_list)
 
 
             after_list = []
             for i, elem in enumerate(switch_index_list):
-                list_event = EventType(elem, 7)
+                list_event = EventType(elem, 10)
+                print(list_event)
                 after_list.append(ThreeChoicesAfterSwitch(list_event))
 
             print(after_list)
-            after_mean = np.mean(after_list,axis = 0)
-            after_std = np.std(after_list,axis = 0)
+            after_mean = np.nanmean(after_list,axis = 0)
+            print(after_mean)
+            after_std = np.nanstd(after_list,axis = 0)
+            print(after_std)
+
             before_list = []
             for i, elem in enumerate(non_switch_index_list):
-                list_event_non = EventType(elem, 7)
+                list_event_non = EventType(elem, 10)
+                print(list_event_non)
                 before_list.append(ThreeChoicesBeforeSwitch(list_event_non))
+                
             print(before_list)
-            before_mean = (np.mean(before_list, axis = 0))
+            before_mean = (np.nanmean(before_list, axis = 0))
             print(before_mean)
-            before_std = (np.std(before_list, axis = 0))
+            before_std = (np.nanstd(before_list, axis = 0))
+            print(before_std)
 
-            x_values = ["Left", "Right"]
+            x_values = ["Run", "Food"]
 
-            for animal in self.animalID:
-                # Plotting
-                fig = plt.figure(figsize = (10, 5))
-                plt.style.use("seaborn")
+            # Plotting
+            fig = plt.figure(figsize = (10, 5))
+            plt.style.use("seaborn")
 
-                # creating the bar plot previous to switch
-                plt.subplot(1, 2, 1)
-                plt.bar(x_values, before_mean, color ='blue',
-                        width = 0.4)
-                plt.errorbar(x_values, before_mean, before_std, fmt=' ', ecolor='black', capsize=5)
+            # creating the bar plot previous to switch
+            plt.subplot(1, 2, 1)
+            plt.bar(x_values, before_mean, color = (0.2, 0.4, 0.6, 0.6),
+                    width = 0.4)
+            plt.errorbar(x_values, before_mean, before_std, fmt=' ', ecolor='black', capsize=5)
 
-                plt.xlabel("Trial Type")
-                plt.ylabel("Choice Type")
-                plt.title("Decisions before left-right switch " + str(animal) + "_" + str(i+1))
+            plt.xlabel("Trial Type")
+            plt.ylabel("Choice Type")
+            plt.title("Decisions before left-right switch" + str(animal) + "_")
 
 
-                # creating the bar plot switched
-                plt.subplot(1, 2, 2)
-                plt.bar(x_values, after_mean, color ='red',
-                        width = 0.4)
-                plt.errorbar(x_values, after_mean, after_std, fmt=' ', ecolor='black', capsize=5)
+            # creating the bar plot switched
+            plt.subplot(1, 2, 2)
+            plt.bar(x_values, after_mean, color = (0.6, 0.4, 0.2, 0.6),
+                    width = 0.4)
+            plt.errorbar(x_values, after_mean, after_std, fmt=' ', ecolor='black', capsize=5)
 
-                plt.xlabel("Trial Type")
-                plt.ylabel("Choice Type")
-                plt.title("Decisions after left-right switch " + str(animal) + "_" + str(i+1))
+            plt.xlabel("Trial Type")
+            plt.ylabel("Choice Type")
+            plt.title("Decisions after left-right switch" + str(animal) + "_")
 
-                plt.tight_layout()
+            plt.tight_layout()
 
-                #os.chdir(r'\\scistor.vu.nl\shares\BETA-NeuroSciences-Hypo\lof\Documents\data\Figures')
-                plt.savefig(str(animal) + '_three_decisions_' + str(i+1) + '.png', bbox_inches='tight')
-                plt.close()    # close the figure window
+            #os.chdir(r'\\scistor.vu.nl\shares\BETA-NeuroSciences-Hypo\lof\Documents\data\Figures')
+            plt.savefig(str(animal) + '_three_decisions' + '.png', bbox_inches='tight')
+            plt.close()    # close the figure window
+
+    def FirstDecisionBeforeAndAfterLine(self):
+        import pandas as pd
+        import datetime
+        from datetime import datetime as dt, timedelta
+        import matplotlib
+        from matplotlib import pyplot as plt        
+        import numpy as np
+        import matplotlib.patches as patches
+        import matplotlib.dates as mdates
+        import matplotlib.lines as mlines
+        import matplotlib.axes as axes
+        from matplotlib.patches import Rectangle
+        import os
+        import numpy as np
+
+        def DetectSwitch():
+            switch_index_list = []
+            previous_position = wheel_position[0]
+
+            for i, val in enumerate(event_type):
+                if wheel_position[i] != previous_position:
+                    previous_position = wheel_position[i]
+
+                    switch_index_list.append(i+2)
+                    print(i+2)
+
+                    #if date[i-1] == date[i]: # does not append if switch happened between days
+                    #    switch_index_list.append(i+2)
+                    #    print(i+2)
+
+            print(' ')
+            return switch_index_list
+
+        def DetectSessionPreviousToSwitch(detect_switch_list):
+            i = 3
+            previous_index_list = []
+
+            for val in detect_switch_list:
+                while True:
+                    if event_type[val - i] == "START":
+                        print(val-i+2)
+                        print("hi")
+                        previous_index_list.append(val-i+2)
+                        break
+                    i += 1
+            
+            return previous_index_list
+            
+
+        def DetectSessionPreviousToSwitch_old():
+            previous_position = wheel_position[0]
+            list_event_type_val = []
+            list_event_type_ind = [] 
+            for i,val in enumerate(event_type):
+                if val == "START" or val == "Session Start":
+                    list_event_type_ind.append(i)
+            for i, val in enumerate(list_event_type_ind):
+                try:
+                    if wheel_position[list_event_type_ind[i+1]] != previous_position:
+                        previous_position = wheel_position[i]
+                        tmp_val = list_event_type_ind[i] + 2
+                        list_event_type_val.append(tmp_val)
+                        print(tmp_val)
+                except:
+                    pass
+            return list_event_type_val
+
+        def ThreeChoicesBeforeSwitch(list_before_switch):
+            num_food = 0
+            num_run = 0
+
+            for elem in list_before_switch:
+                #print(elem)
+                if elem == "BB3":
+                    num_run += 1
+                if elem == "BB4":
+                    num_food += 1
+                if num_run + num_food >= 1:
+                    break
+                if elem == "END":
+                    break
+
+            if num_run + num_food >= 1:
+                print("done\n")
+                return [num_run, num_food]
+            else:
+                print("did not reach three choices")
+                return [float('NaN'), float('NaN')]
+
+        def ThreeChoicesAfterSwitch(list_after_switch):
+            num_food = 0
+            num_run = 0
+
+            for elem in list_after_switch:
+                #print(elem)
+                if elem == "BB3":
+                    num_run += 1
+                if elem == "BB4":
+                    num_food += 1
+                if num_run + num_food >= 1:
+                    break
+                if elem == "END":
+                    break
+
+            if num_run + num_food >= 1:
+                print("done\n")
+                return [num_run, num_food]
+            else:
+                print("did not reach three choices")
+                return [float('NaN'), float('NaN')]
+
+        def EventType(index, number_of_elements):
+            event_list = []
+            event_type = df['Type']
+
+            for i in range(index,index+number_of_elements):
+                event_list.append(event_type[i])
+                
+            return event_list
+
+        for animal in self.animalID:
+            #os.chdir(r'\\scistor.vu.nl\shares\BETA-NeuroSciences-Hypo\lof\Documents\data')
+            os.chdir(r'C:\Users\Administrator2\Documents\GitHub\Amaze\Data visualization')
+            df = pd.read_csv(str(animal) + "_events.csv")
+            date_time  = pd.to_datetime(df['Date_Time'])
+            date = pd.to_datetime(df['Date_Time']).dt.date
+            time = pd.to_datetime(df['Date_Time']).dt.time
+            unique_dates = pd.unique(date)
+            wheel_position = df["Wheel_Position"]
+            event_type = df['Type']
+
+            
+            switch_index_list = DetectSwitch()
+            non_switch_index_list = DetectSessionPreviousToSwitch(switch_index_list)
+
+
+            after_list = []
+            for i, elem in enumerate(switch_index_list):
+                list_event = EventType(elem, 10)
+                print(list_event)
+                after_list.append(ThreeChoicesAfterSwitch(list_event))
+
+            print(after_list)
+            after_mean = np.nanmean(after_list,axis = 0)
+            print(after_mean)
+            after_std = np.nanstd(after_list,axis = 0)
+            print(after_std)
+
+            before_list = []
+            for i, elem in enumerate(non_switch_index_list):
+                list_event_non = EventType(elem, 10)
+                print(list_event_non)
+                before_list.append(ThreeChoicesBeforeSwitch(list_event_non))
+                
+            print(before_list)
+            before_mean = (np.nanmean(before_list, axis = 0))
+            print(before_mean)
+            before_std = (np.nanstd(before_list, axis = 0))
+            print(before_std)
+
+            x_values = [0, 1]
+
+            # Plotting
+            fig = plt.figure(figsize = (10, 5))
+            plt.style.use("seaborn")
+
+            # creating the bar plot previous to switch
+            b = plt.plot([x - 0.02 for x in x_values], [before_mean[0], after_mean[0]], color = (0.2, 0.4, 0.6, 0.6), marker='.', markersize=20, label="Run")
+            (_, caps, _) = plt.errorbar([x - 0.02 for x in x_values], before_mean, before_std, ecolor=(0.2, 0.4, 0.6, 0.6), capsize=10, elinewidth=3, markeredgewidth=3, fmt=' ')
+
+            a = plt.plot([x + 0.02 for x in x_values], [before_mean[1], after_mean[1]], color = (0.6, 0.4, 0.2, 0.6), marker='.', markersize=20, label="Food")
+            (_, caps, _) = plt.errorbar([x + 0.02 for x in x_values], after_mean, after_std, ecolor=(0.6, 0.4, 0.2, 0.6), capsize=10, elinewidth=3, markeredgewidth=3, fmt=' ')
+
+            plt.ylabel("Choice Type (%)")
+            plt.title("First decision before and after switching" + str(animal) + "_")
+            plt.legend()
+
+            plt.xticks([0, 1], ['Before', 'After'], rotation=20)  # Set text labels and properties.)
+
+            plt.tight_layout()
+
+            #os.chdir(r'\\scistor.vu.nl\shares\BETA-NeuroSciences-Hypo\lof\Documents\data\Figures')
+            plt.savefig(str(animal) + '_three_decisions_line' + '.png', bbox_inches='tight')
+            plt.close()    # close the figure window
 if __name__ == "__main__":
     c = Behavioral_plot([189003, 189004, 189005])
-    c.ThreeDecisionBeforeAndAfter()
+    c.FirstDecisionBeforeAndAfterLine()
     #c.DecisionSwitch()
     #c.RotationPlot()
     #c.TimeDiff_SS()
