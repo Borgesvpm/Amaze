@@ -3940,8 +3940,6 @@ Date_Time,Rotation,Pellet_Retrieval,Type,Wheel_Position,FED_Position
 2021-04-15 14:37:42.974080,*,,BB3,Left,Right
 2021-04-15 14:39:09.689029,0.8158,,Run_log,Left,Right
 2021-04-15 14:39:16.460699,-,,END,Left,Right
-2021-04-15 15:19:28.121140,+,,START,Left,Right
-2021-04-15 15:19:39.962230,-,,END,Left,Right
 2021-04-15 17:21:56.982476,+,,START,Right,Left
 2021-04-15 17:22:14.591525,*,,BB2,Right,Left
 2021-04-15 17:22:17.349952,*,,BB3,Right,Left
