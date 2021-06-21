@@ -382,7 +382,7 @@ class Buzzer:
 
 #initialize serial port for RFID2
 serRFID2 = serial.Serial()
-serRFID2.port = '/dev/ttyUSB2' #Arduino serial port
+serRFID2.port = '/dev/ttyUSB2' 
 serRFID2.baudrate = 9600
 serRFID2.timeout = 100000 #specify timeout when using readline()
 serRFID2.open()
@@ -393,7 +393,7 @@ serRFID2.close()
 
 #initialize serial port for RFID
 serRFID = serial.Serial()
-serRFID.port = '/dev/ttyUSB0' #Arduino serial port
+serRFID.port = '/dev/ttyUSB0' 
 serRFID.baudrate = 9600
 serRFID.timeout = 100000 #specify timeout when using readline()
 serRFID.open()
@@ -404,7 +404,7 @@ serRFID.close()
 
 #initialize serial port for OpenScale
 ser = serial.Serial()
-ser.port = '/dev/ttyUSB1' #Arduino serial port
+ser.port = '/dev/ttyUSB1' 
 ser.baudrate = 19200
 ser.timeout = 100000
 #specify timeout when using readline()
@@ -418,17 +418,17 @@ ser.close()
 
 
 # set pin inputs from arduino
-ard_pi_1 = 35
-ard_pi_2 = 36
-ard_pi_3 = 37
+ard_pi_1 = 33 # 35
+ard_pi_2 = 35 # 36
+ard_pi_3 = 36 # 37
 
 if wheel_position == "Left":
-    ard_pi_4 = 38
-    ard_pi_5 = 33
+    ard_pi_4 = 37 # 38
+    ard_pi_5 = 38 # 33
 
 elif wheel_position == "Right":
-    ard_pi_4 = 33
-    ard_pi_5 = 38
+    ard_pi_4 = 38 # 33
+    ard_pi_5 = 37 # 38
 
 GPIO.setup(ard_pi_1,GPIO.IN)
 GPIO.setup(ard_pi_2,GPIO.IN)
@@ -446,8 +446,8 @@ GPIO.setup(clk,GPIO.IN)
 clkLastState=GPIO.input(clk)
 
 # set pin outputs to arduino
-Pi_RFID = 16
-Pi_exit = 15
+Pi_RFID = 15#16
+Pi_exit = 16
 Pi_end = 13
 Pi_capture_1=40
 PiArd_reset=18
