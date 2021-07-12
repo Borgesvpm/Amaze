@@ -18,6 +18,112 @@ from datetime import datetime
 # change directory to document data folder
 os.chdir("/home/pi/Documents/data/")
 
+# set GPIO numbering mode
+GPIO.setmode(GPIO.BOARD)
+GPIO.setwarnings(False) # Ignore warning for now
+
+## Initialize USBs
+
+#initialize serial port for RFID2
+serRFID2 = serial.Serial()
+serRFID2.port = '/dev/ttyUSB2' #Arduino serial port
+serRFID2.baudrate = 9600
+serRFID2.timeout = 100000 #specify timeout when using readline()
+serRFID2.open()
+if serRFID2.is_open==True:
+    print("\nRFID2 antenna ok. Configuration:\n")
+    print(serRFID2, "\n") #print serial parameters
+serRFID2.close()
+
+#initialize serial port for RFID
+serRFID = serial.Serial()
+serRFID.port = '/dev/ttyUSB0' #Arduino serial port
+serRFID.baudrate = 9600
+serRFID.timeout = 100000 #specify timeout when using readline()
+serRFID.open()
+if serRFID.is_open==True:
+    print("\nRFID antenna ok. Configuration:\n")
+    print(serRFID, "\n") #print serial parameters
+serRFID.close()
+
+#initialize serial port for OpenScale
+ser = serial.Serial()
+ser.port = '/dev/ttyUSB1' #Arduino serial port
+ser.baudrate = 19200
+ser.timeout = 100000
+#specify timeout when using readline()
+ser.open()
+ser.flush()
+if ser.is_open==True:
+    print("\nScale ok. Configuration:\n")
+    print(ser, "\n") #print serial parameters
+ser.close()
+
+## Define GPIOs
+# set pin inputs from arduino
+ard_pi_1 = 35
+ard_pi_2 = 36
+ard_pi_3 = 37
+ard_pi_4 = 38
+ard_pi_5 = 33
+GPIO.setup(ard_pi_1,GPIO.IN)
+GPIO.setup(ard_pi_2,GPIO.IN)
+GPIO.setup(ard_pi_3,GPIO.IN)
+GPIO.setup(ard_pi_4,GPIO.IN)
+GPIO.setup(ard_pi_5,GPIO.IN)
+
+Food_pod_retrieval = 11 # BNC output on the Feather
+GPIO.setup(Food_pod_retrieval, GPIO.IN)
+
+
+#set pin inputs from running wheel rotary encoder
+clk=12
+GPIO.setup(clk,GPIO.IN)
+clkLastState=GPIO.input(clk)
+
+# set pin outputs to arduino
+Pi_RFID = 16
+Pi_exit = 15
+Pi_end = 13
+Pi_capture_1=40
+PiArd_reset=18
+
+
+GPIO.setup(Pi_RFID,GPIO.OUT)
+GPIO.setup(Pi_exit,GPIO.OUT)
+GPIO.setup(Pi_end,GPIO.OUT)
+GPIO.setup(Pi_capture_1,GPIO.OUT)
+GPIO.setup(PiArd_reset,GPIO.OUT)
+GPIO.output(Pi_RFID,False)
+GPIO.output(Pi_exit,False)
+GPIO.output(Pi_end,False)
+GPIO.output(Pi_capture_1,False)
+GPIO.output(PiArd_reset,False)
+time.sleep(0.3)
+GPIO.output(PiArd_reset,True)
+
+## Define functions
+
+def emergency_button(channel):
+    """
+    To be used when there are one or multiple animals stuck inside the bridge. It opens
+    door 1 and stops the program.
+    """
+    print("Emergency button was pushed!")
+    GPIO.output(Pi_RFID,True)
+    GPIO.output(Pi_exit,True)
+    GPIO.cleanup() # Clean up
+    sys.exit()
+    
+GPIO.setup(19, GPIO.IN, pull_up_down=GPIO.PUD_DOWN) # Set pin 10 to be an input pin and set initial value to be pulled low (off)
+GPIO.add_event_detect(19,GPIO.RISING,callback=emergency_button) # Setup event on pin 10 rising edge
+
+class Buzzer:
+    def buzz(self, on):
+        buzzer=22
+        GPIO.setup(buzzer,GPIO.OUT)
+        GPIO.output(buzzer, on)
+
 def RFID_readtag(RFIDnum):
     """
     This function reads the RFID tag, removes the junk incoming and returns the
@@ -338,108 +444,7 @@ class SaveData:
         else:
             df_e.to_csv(animaltag + "_events.csv", mode="a+", header=False, encoding="utf-8-sig", index=False)
 
-# set GPIO numbering mode
-GPIO.setmode(GPIO.BOARD)
-GPIO.setwarnings(False) # Ignore warning for now
-
-def emergency_button(channel):
-    """
-    To be used when there are one or multiple animals stuck inside the bridge. It opens
-    door 1 and stops the program.
-    """
-    print("Emergency button was pushed!")
-    GPIO.output(Pi_RFID,True)
-    GPIO.output(Pi_exit,True)
-    GPIO.cleanup() # Clean up
-    sys.exit()
-    
-GPIO.setup(19, GPIO.IN, pull_up_down=GPIO.PUD_DOWN) # Set pin 10 to be an input pin and set initial value to be pulled low (off)
-GPIO.add_event_detect(19,GPIO.RISING,callback=emergency_button) # Setup event on pin 10 rising edge
-
-class Buzzer:
-    def buzz(self, on):
-        buzzer=22
-        GPIO.setup(buzzer,GPIO.OUT)
-        GPIO.output(buzzer, on)
-
-#initialize serial port for RFID2
-serRFID2 = serial.Serial()
-serRFID2.port = '/dev/ttyUSB2' #Arduino serial port
-serRFID2.baudrate = 9600
-serRFID2.timeout = 100000 #specify timeout when using readline()
-serRFID2.open()
-if serRFID2.is_open==True:
-    print("\nRFID2 antenna ok. Configuration:\n")
-    print(serRFID2, "\n") #print serial parameters
-serRFID2.close()
-
-#initialize serial port for RFID
-serRFID = serial.Serial()
-serRFID.port = '/dev/ttyUSB0' #Arduino serial port
-serRFID.baudrate = 9600
-serRFID.timeout = 100000 #specify timeout when using readline()
-serRFID.open()
-if serRFID.is_open==True:
-    print("\nRFID antenna ok. Configuration:\n")
-    print(serRFID, "\n") #print serial parameters
-serRFID.close()
-
-#initialize serial port for OpenScale
-ser = serial.Serial()
-ser.port = '/dev/ttyUSB1' #Arduino serial port
-ser.baudrate = 19200
-ser.timeout = 100000
-#specify timeout when using readline()
-ser.open()
-ser.flush()
-if ser.is_open==True:
-    print("\nScale ok. Configuration:\n")
-    print(ser, "\n") #print serial parameters
-ser.close()
-
-
-
-# set pin inputs from arduino
-ard_pi_1 = 35
-ard_pi_2 = 36
-ard_pi_3 = 37
-ard_pi_4 = 38
-ard_pi_5 = 33
-GPIO.setup(ard_pi_1,GPIO.IN)
-GPIO.setup(ard_pi_2,GPIO.IN)
-GPIO.setup(ard_pi_3,GPIO.IN)
-GPIO.setup(ard_pi_4,GPIO.IN)
-GPIO.setup(ard_pi_5,GPIO.IN)
-
-Food_pod_retrieval = 11 # BNC output on the Feather
-GPIO.setup(Food_pod_retrieval, GPIO.IN)
-
-
-#set pin inputs from running wheel rotary encoder
-clk=12
-GPIO.setup(clk,GPIO.IN)
-clkLastState=GPIO.input(clk)
-
-# set pin outputs to arduino
-Pi_RFID = 16
-Pi_exit = 15
-Pi_end = 13
-Pi_capture_1=40
-PiArd_reset=18
-
-
-GPIO.setup(Pi_RFID,GPIO.OUT)
-GPIO.setup(Pi_exit,GPIO.OUT)
-GPIO.setup(Pi_end,GPIO.OUT)
-GPIO.setup(Pi_capture_1,GPIO.OUT)
-GPIO.setup(PiArd_reset,GPIO.OUT)
-GPIO.output(Pi_RFID,False)
-GPIO.output(Pi_exit,False)
-GPIO.output(Pi_end,False)
-GPIO.output(Pi_capture_1,False)
-GPIO.output(PiArd_reset,False)
-time.sleep(0.3)
-GPIO.output(PiArd_reset,True)
+## Loop initialization
 
 #state variables
 MODE=1
@@ -458,6 +463,8 @@ food_clk_start = 0
 
 save = SaveData()
 buzzer = Buzzer()
+
+## Infinite loop
 
 while True:
     MODE = check_bridge() 
