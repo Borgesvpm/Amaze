@@ -17,21 +17,26 @@ class TicTacToe():
             current_board[0][0] == current_board[1][1] and current_board[0][0] == current_board[2][2] or
             current_board[0][2] == current_board[1][1] and current_board[0][2] == current_board[2][0]):
 
-            print(f"Congratulations! {self.last_player} won!")
+            print(f"\nCongratulations! {self.last_player} won!")
 
             self.flag_end_game = True
 
     def intro_messages(self):
-        print("Welcome to tic-tac-toe python v0.01!")
+        print("\nWelcome to tic-tac-toe python v0.01!")
 
         if self.play_mode == "2P":
             print("You selected two-player mode.")
         
-        print("In order to play, you need to input letters according to the following board: ")
+        print("\nIn order to play, you need to input letters according to the following board: ")
 
+        self.show_grid()
+
+    def show_grid(self):
+        print(" ")
         print(["1","2","3"])
         print(["4","5","6"]) 
         print(["7","8","9"])
+        print(" ")
 
     def game(self):
         self.intro_messages()
@@ -44,7 +49,15 @@ class TicTacToe():
                 self.last_player = "Player 2"
                 self.player_marker = "o"
 
-            selection_player_1 = input(f"{self.last_player} , choose a number between 1-9 to play according to the board: ")
+            while True:
+                selection_player_1 = input(f"{self.last_player} , choose a number between 1-9 to play according to the board: ")
+                if not selection_player_1.isdigit():
+                    print("\nPlease type only numbers.")
+                elif int(selection_player_1) < 1 or int(selection_player_1) > 9:
+                    print("\nPlease type a number greater than 1 and lesser than 9, according to the grid.")
+                    self.show_grid()
+                else:
+                    break
 
             #update choice upon board
             if selection_player_1 == "1":
@@ -84,6 +97,9 @@ class TicTacToe():
             self.check_win_conditions(self.number_board)
             if self.flag_end_game:
                 break
+        
+        if not self.flag_end_game:
+            print("\nThe game was drawn.")
 
 if __name__ == '__main__':
     play_2p = TicTacToe("2P")
